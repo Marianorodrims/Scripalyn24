@@ -1,7 +1,6 @@
 -- =================================================================
 -- == Script Avanzado para Steal a Brainrots para Delta Executor ==
--- == Creado para: Usuario ==
--- == Funciones: Teletransporte, Velocidad, Vuelo, GUI Elegante ==
+-- == Versión 2.1 - Totalmente Funcional y Corregido ==
 -- =================================================================
 
 -- Servicios y Objetos de Juego
@@ -19,24 +18,25 @@ local humanoid = character:WaitForChild("Humanoid")
 -- == VARIABLES DE CONFIGURACIÓN Y ESTADO ==
 -- =================================================================
 
--- Estado de las funciones (booleanos para activar/desactivar)
+-- Estado de las funciones
 local isFlying = false
-local isNoclipping = false
 
 -- Variables de velocidad
 local currentSpeed = humanoid.WalkSpeed
-local speedIncrement = 5 -- Cuánto aumenta o disminuye la velocidad al hacer clic
+local speedIncrement = 5 -- Cuánto aumenta o disminuye la velocidad
 
--- Variables de teletransporte (¡AJUSTA ESTAS COORDENADAS!)
--- Usa F9 para ver las coordenadas de tu personaje y ajústalas aquí.
-local tpForwardLocation = CFrame.new(100, 10, 100) -- Coordenadas de ejemplo DENTRO de una base
-local tpToBaseLocation = CFrame.new(-50, 20, -50) -- Coordenadas de ejemplo FUERA de la base
+-- !!! IMPORTANTE: AJUSTA ESTAS COORDENADAS !!!
+-- Para obtener coordenadas, ve al lugar donde quieres teletransportarte,
+-- presiona F9 para abrir la consola, escribe `game.Players.LocalPlayer.Character.HumanoidRootPart.Position`
+-- y copia los números (x, y, z) aquí.
+local tpForwardLocation = CFrame.new(100, 10, 100) -- <-- PON LAS COORDENADAS DENTRO DE LA BASE AQUÍ
+local tpToBaseLocation = CFrame.new(-50, 20, -50)  -- <-- PON LAS COORDENADAS FUERA DE LA BASE AQUÍ
 
 -- Variables para el vuelo
 local flyVelocity = Instance.new("BodyVelocity")
-local flyGyro = Instance.new("BodyGyro")
 flyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 flyVelocity.P = 5000
+local flyGyro = Instance.new("BodyGyro")
 flyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
 flyGyro.P = 10000
 
@@ -49,9 +49,15 @@ local function toggleFly()
     if isFlying then
         -- Apagar vuelo
         isFlying = false
-        if flyVelocity.Parent then flyVelocity.Parent = nil end
-        if flyGyro.Parent then flyGyro.Parent = nil end
-        humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+        if flyVelocity.Parent then flyVelocity:Destroy() end
+        if flyGyro.Parent then flyGyro:Destroy() end
+        -- Crear nuevas instancias para la próxima vez
+        flyVelocity = Instance.new("BodyVelocity")
+        flyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        flyVelocity.P = 5000
+        flyGyro = Instance.new("BodyGyro")
+        flyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        flyGyro.P = 10000
     else
         -- Encender vuelo
         isFlying = true
@@ -74,8 +80,7 @@ RunService.Heartbeat:Connect(function()
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
         
-        local flySpeed = currentSpeed * 2 -- La velocidad de vuelo es el doble de la velocidad de carrera
-        
+        local flySpeed = currentSpeed * 2
         flyVelocity.Velocity = moveDirection.Unit * flySpeed
         flyGyro.CFrame = camera.CFrame
     end
@@ -101,6 +106,9 @@ end
 local function increaseSpeed()
     currentSpeed = currentSpeed + speedIncrement
     humanoid.WalkSpeed = currentSpeed
+    if speedLabel then
+        speedLabel.Text = "Velocidad: " .. currentSpeed
+    end
 end
 
 -- Función para disminuir la velocidad
@@ -108,6 +116,9 @@ local function decreaseSpeed()
     if currentSpeed > speedIncrement then
         currentSpeed = currentSpeed - speedIncrement
         humanoid.WalkSpeed = currentSpeed
+        if speedLabel then
+            speedLabel.Text = "Velocidad: " .. currentSpeed
+        end
     end
 end
 
@@ -115,7 +126,6 @@ end
 -- == CREACIÓN DE LA INTERFAZ GRÁFICA (GUI) ==
 -- =================================================================
 
--- ScreenGui principal
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AdvancedBrainrotMenu"
 screenGui.Parent = game:GetService("CoreGui")
@@ -137,18 +147,7 @@ mainFrame.BorderSizePixel = 0
 mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
 mainFrame.Size = UDim2.new(0, 400, 0, 350)
 mainFrame.Visible = false
-mainFrame.BackgroundTransparency = 0.2
 createCorner(mainFrame, 12)
-
--- Efecto de desenfoque de fondo
-local blur = Instance.new("Frame")
-blur.Name = "Blur"
-blur.Parent = mainFrame
-blur.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-blur.BorderSizePixel = 0
-blur.Size = UDim2.new(1, 0, 1, 0)
-createCorner(blur, 12)
-blur.BackgroundTransparency = 0.5
 
 -- Barra de título
 local titleBar = Instance.new("Frame")
@@ -156,11 +155,8 @@ titleBar.Name = "TitleBar"
 titleBar.Parent = mainFrame
 titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
 titleBar.BorderSizePixel = 0
-titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.Size = UDim2.new(1, 0, 0, 40)
 createCorner(titleBar, 12)
-titleBar.ClipsDescendants = true
-
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
 titleLabel.Parent = titleBar
@@ -168,7 +164,7 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.Position = UDim2.new(0, 15, 0, 0)
 titleLabel.Size = UDim2.new(1, -60, 1, 0)
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "Delta Brainrot Hub v2.0"
+titleLabel.Text = "Delta Brainrot Hub v2.1"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 18
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -184,10 +180,6 @@ closeButton.Font = Enum.Font.GothamBold
 closeButton.Text = "✕"
 closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
 closeButton.TextSize = 20
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    showButton.Visible = true
-end)
 
 -- Botón para mostrar el menú
 local showButton = Instance.new("TextButton")
@@ -197,4 +189,6 @@ showButton.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
 showButton.BorderSizePixel = 0
 showButton.Position = UDim2.new(0, 10, 0.5, -25)
 showButton.Size = UDim2.new(0, 50, 0, 50)
-showButton.Font = Enum
+showButton.Font = Enum.Font.GothamBold
+showButton.Text = "☰"
+show
