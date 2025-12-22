@@ -1,204 +1,167 @@
--- GUI y Funcionalidades para Delta Roblox
--- Creado por: Asistente IA
--- Funciones: TP a través de paredes, TP de salida, ajuste de velocidad, vuelo y GUI elegante.
+--// Delta Script Mejorado con control de velocidad + Interfaz Premium
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 
--- Servicios
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local StarterGui = game:GetService("StarterGui")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
+-- Estados y configuraciones
+local noClipEnabled = false
+local speedEnabled = false
+local walkSpeed = humanoid.WalkSpeed
+local speedStep = 5
+local minSpeed = 16
+local maxSpeed = 200
 
--- Variables
-local isFlying = false
-local flySpeed = 50
-local originalWalkSpeed = Humanoid.WalkSpeed
-local currentWalkSpeed = originalWalkSpeed
-local isTpForwardEnabled = true
-local isTpBaseExitEnabled = true
+-- Funciones
+local function toggleNoClip(state)
+\tfor _, part in ipairs(character:GetDescendants()) do
+\t\tif part:IsA("BasePart") then
+\t\t\tpart.CanCollide = not state
+\t\tend
+\tend
+end
 
--- Función para crear una GUI elegante
-local function createGUI()
-    -- Eliminar GUI existente si hay una
-    local existingGUI = LocalPlayer:FindFirstChild("BrainRotGUI")
-    if existingGUI then
-        existingGUI:Destroy()
-    end
+local function updateSpeed()
+\thumanoid.WalkSpeed = speedEnabled and walkSpeed or 16
+end
 
-    -- Crear ScreenGui
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "BrainRotGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.ResetOnSpawn = false
+local function escapeBase()
+\tcharacter:SetPrimaryPartCFrame(CFrame.new(0, 150, 0))
+end
 
-    -- Crear Frame principal
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Parent = screenGui
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
-    mainFrame.Size = UDim2.new(0, 400, 0, 300)
-    mainFrame.ClipsDescendants = true
+-- UI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "DeltaMenu"
+gui.Parent = game.CoreGui
 
-    -- Esquinas redondeadas y sombra
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = mainFrame
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Position = UDim2.new(0.5, -175, 0.5, -120)
+frame.Size = UDim2.new(0, 350, 0, 240)
+frame.Active = true
+frame.Draggable = true
+frame.ClipsDescendants = true
 
-    local shadow = Instance.new("Frame")
-    shadow.Name = "Shadow"
-    shadow.Parent = mainFrame
-    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.BorderSizePixel = 0
-    shadow.Position = UDim2.new(0, 2, 0, 2)
-    shadow.Size = UDim2.new(1, 0, 1, 0)
-    shadow.ZIndex = -1
-    local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, 12)
-    shadowCorner.Parent = shadow
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
 
-    -- Título
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Parent = mainFrame
-    title.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    title.BorderSizePixel = 0
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "BrainRot Stealer Pro"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 12)
-    titleCorner.Parent = title
+local title = Instance.new("TextLabel")
+title.Parent = frame
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.Font = Enum.Font.GothamBold
+title.Text = "⚡ Delta Enhanced Menu ⚡"
+title.TextSize = 18
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BorderSizePixel = 0
 
-    -- Botón de cerrar
-    local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
-    closeButton.Parent = title
-    closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    closeButton.BorderSizePixel = 0
-    closeButton.Position = UDim2.new(1, -30, 0, 5)
-    closeButton.Size = UDim2.new(0, 30, 0, 30)
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.Text = "X"
-    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = 14
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeButton
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
 
-    -- Contenedor de botones
-    local buttonContainer = Instance.new("Frame")
-    buttonContainer.Name = "ButtonContainer"
-    buttonContainer.Parent = mainFrame
-    buttonContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    buttonContainer.BackgroundTransparency = 1
-    buttonContainer.BorderSizePixel = 0
-    buttonContainer.Position = UDim2.new(0, 20, 0, 60)
-    buttonContainer.Size = UDim2.new(1, -40, 1, -80)
-    buttonContainer.LayoutOrder = 1
+-- Botones principales
+local function createButton(name, text, pos)
+\tlocal b = Instance.new("TextButton")
+\tb.Name = name
+\tb.Parent = frame
+\tb.Size = UDim2.new(0, 320, 0, 40)
+\tb.Position = pos
+\tb.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+\tb.Text = text
+\tb.TextColor3 = Color3.new(1, 1, 1)
+\tb.Font = Enum.Font.Gotham
+\tb.TextSize = 16
+\tb.BorderSizePixel = 0
+\tInstance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+\treturn b
+end
 
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Parent = buttonContainer
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    listLayout.Padding = UDim.new(0, 10)
+local noClipButton = createButton("NoClip", "NoClip: OFF", UDim2.new(0, 15, 0, 50))
+local speedButton = createButton("Speed", "Speed: OFF", UDim2.new(0, 15, 0, 100))
+local escapeButton = createButton("Escape", "Escape Base", UDim2.new(0, 15, 0, 150))
 
-    -- Función para crear un botón
-    local function createButton(text, layoutOrder, onClick)
-        local button = Instance.new("TextButton")
-        button.Parent = buttonContainer
-        button.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-        button.BorderSizePixel = 0
-        button.Size = UDim2.new(1, 0, 0, 40)
-        button.Font = Enum.Font.Gotham
-        button.Text = text
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextSize = 16
-        button.LayoutOrder = layoutOrder
+-- Controles de velocidad visuales
+local speedFrame = Instance.new("Frame")
+speedFrame.Parent = frame
+speedFrame.BackgroundTransparency = 1
+speedFrame.Position = UDim2.new(0, 15, 0, 195)
+speedFrame.Size = UDim2.new(1, -30, 0, 40)
 
-        local buttonCorner = Instance.new("UICorner")
-        buttonCorner.CornerRadius = UDim.new(0, 8)
-        buttonCorner.Parent = button
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Parent = speedFrame
+speedLabel.BackgroundTransparency = 1
+speedLabel.Position = UDim2.new(0, 0, 0, 0)
+speedLabel.Size = UDim2.new(0, 130, 1, 0)
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.Text = "Velocidad: " .. walkSpeed
+speedLabel.TextSize = 16
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
 
-        local hoverTweenIn = TweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(55, 55, 70)})
-        local hoverTweenOut = TweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(45, 45, 60)})
+local plusButton = Instance.new("TextButton")
+plusButton.Parent = speedFrame
+plusButton.Size = UDim2.new(0, 40, 1, 0)
+plusButton.Position = UDim2.new(1, -40, 0, 0)
+plusButton.Text = "+"
+plusButton.Font = Enum.Font.GothamBold
+plusButton.TextSize = 22
+plusButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+plusButton.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", plusButton).CornerRadius = UDim.new(0, 8)
 
-        button.MouseEnter:Connect(function()
-            hoverTweenIn:Play()
-        end)
+local minusButton = Instance.new("TextButton")
+minusButton.Parent = speedFrame
+minusButton.Size = UDim2.new(0, 40, 1, 0)
+minusButton.Position = UDim2.new(1, -90, 0, 0)
+minusButton.Text = "-"
+minusButton.Font = Enum.Font.GothamBold
+minusButton.TextSize = 22
+minusButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minusButton.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", minusButton).CornerRadius = UDim.new(0, 8)
 
-        button.MouseLeave:Connect(function()
-            hoverTweenOut:Play()
-        end)
+-- Eventos
+noClipButton.MouseButton1Click:Connect(function()
+\tnoClipEnabled = not noClipEnabled
+\tnoClipButton.Text = "NoClip: " .. (noClipEnabled and "ON" or "OFF")
+\tnoClipButton.BackgroundColor3 = noClipEnabled and Color3.fromRGB(40, 130, 40) or Color3.fromRGB(60, 60, 60)
+\ttoggleNoClip(noClipEnabled)
+end)
 
-        button.MouseButton1Click:Connect(onClick)
+speedButton.MouseButton1Click:Connect(function()
+\tspeedEnabled = not speedEnabled
+\tspeedButton.Text = "Speed: " .. (speedEnabled and "ON" or "OFF")
+\tspeedButton.BackgroundColor3 = speedEnabled and Color3.fromRGB(40, 130, 40) or Color3.fromRGB(60, 60, 60)
+\tupdateSpeed()
+end)
 
-        return button
-    end
+plusButton.MouseButton1Click:Connect(function()
+\twalkSpeed = math.clamp(walkSpeed + speedStep, minSpeed, maxSpeed)
+\tspeedLabel.Text = "Velocidad: " .. walkSpeed
+\tupdateSpeed()
+end)
 
-    -- Botón de TP Forward
-    createButton("TP Forward (Entrar a Base)", 1, function()
-        isTpForwardEnabled = not isTpForwardEnabled
-        if isTpForwardEnabled then
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] TP Forward Activado. Acércate a una pared y presiona 'E'.";
-                Color = Color3.new(0, 1, 0);
-            })
-        else
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] TP Forward Desactivado.";
-                Color = Color3.new(1, 0, 0);
-            })
-        end
-    end)
+minusButton.MouseButton1Click:Connect(function()
+\twalkSpeed = math.clamp(walkSpeed - speedStep, minSpeed, maxSpeed)
+\tspeedLabel.Text = "Velocidad: " .. walkSpeed
+\tupdateSpeed()
+end)
 
-    -- Botón de TP Base Exit
-    createButton("TP Base Exit (Salir de Base)", 2, function()
-        isTpBaseExitEnabled = not isTpBaseExitEnabled
-        if isTpBaseExitEnabled then
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] TP Base Exit Activado. Presiona 'Q' para salir.";
-                Color = Color3.new(0, 1, 0);
-            })
-        else
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] TP Base Exit Desactivado.";
-                Color = Color3.new(1, 0, 0);
-            })
-        end
-    end)
+escapeButton.MouseButton1Click:Connect(function()
+\tescapeBase()
+end)
 
-    -- Botón de Volar
-    createButton("Activar Vuelo (F)", 3, function()
-        isFlying = not isFlying
-        if isFlying then
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] Modo Vuelo Activado. Presiona 'F' para detenerse.";
-                Color = Color3.new(0, 1, 0);
-            })
-        else
-            StarterGui:SetCore("ChatMakeSystemMessage", {
-                Text = "[BrainRot] Modo Vuelo Desactivado.";
-                Color = Color3.new(1, 0, 0);
-            })
-        end
-    end)
+-- Mantener NoClip activo
+runService.Stepped:Connect(function()
+\tif noClipEnabled then
+\t\ttoggleNoClip(true)
+\tend
+end)
 
-    -- Contenedor de ajuste de velocidad
-    local speedContainer = Instance.new("Frame")
-    speedContainer.Name = "SpeedContainer"
-    speedContainer.Parent = buttonContainer
-    speedContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-    speedContainer.BorderSizePixel = 0
-    speedContainer.Size = UDim2.new(1, 0, 0, 60)
-    speedContainer.LayoutOrder = 4
-    local speedCorner = Instance.new("UICorner")
-    speed
+-- Reasignar humanoide tras respawn
+player.CharacterAdded:Connect(function(newChar)
+\tcharacter = newChar
+\thumanoid = newChar:WaitForChild("Humanoid")
+\tupdateSpeed()
+end)
