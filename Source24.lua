@@ -126,3 +126,69 @@ _G.ToggleFly = function()
 end
 
 _G.TPForward = tpForward
+
+--// ===== MOBILE CONTROLS =====
+local playerGui = player:WaitForChild("PlayerGui")
+
+local mobileGui = Instance.new("ScreenGui", playerGui)
+mobileGui.Name = "MobileControls"
+
+local function makeBtn(txt, pos)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0,60,0,60)
+	b.Position = pos
+	b.Text = txt
+	b.TextScaled = true
+	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BorderSizePixel = 0
+	b.Parent = mobileGui
+	b.AutoButtonColor = true
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+	return b
+end
+
+-- BOTONES
+local flyBtn     = makeBtn("FLY", UDim2.new(0.05,0,0.6,0))
+local noclipBtn  = makeBtn("NO\nCLIP", UDim2.new(0.05,0,0.7,0))
+local speedBtn   = makeBtn("SPEED", UDim2.new(0.05,0,0.8,0))
+local tpBtn      = makeBtn("TP", UDim2.new(0.05,0,0.9,0))
+
+local upBtn      = makeBtn("↑", UDim2.new(0.85,0,0.65,0))
+local downBtn    = makeBtn("↓", UDim2.new(0.85,0,0.8,0))
+local leftBtn    = makeBtn("⇦", UDim2.new(0.75,0,0.75,0))
+local rightBtn   = makeBtn("⇨", UDim2.new(0.95,0,0.75,0))
+local forwardBtn = makeBtn("▲", UDim2.new(0.85,0,0.55,0))
+
+-- TOGGLES
+flyBtn.MouseButton1Click:Connect(function()
+	_G.ToggleFly()
+end)
+
+noclipBtn.MouseButton1Click:Connect(function()
+	_G.ToggleNoClip()
+end)
+
+speedBtn.MouseButton1Click:Connect(function()
+	_G.ToggleSpeed()
+end)
+
+tpBtn.MouseButton1Click:Connect(function()
+	_G.TPForward()
+end)
+
+-- MOVIMIENTO FLY (MANTENER PRESIONADO)
+local function hold(btn, key)
+	btn.MouseButton1Down:Connect(function()
+		flyDir[key] = 1
+	end)
+	btn.MouseButton1Up:Connect(function()
+		flyDir[key] = 0
+	end)
+end
+
+hold(upBtn,"u")
+hold(downBtn,"d")
+hold(leftBtn,"l")
+hold(rightBtn,"r")
+hold(forwardBtn,"f")
