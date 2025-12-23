@@ -1,13 +1,9 @@
---========================================
--- SERVICIOS
---========================================
+--// SERVICIOS
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
---========================================
--- PLAYER
---========================================
+--// PLAYER
 local player = Players.LocalPlayer
 local character, humanoid, rootPart
 
@@ -20,9 +16,7 @@ end
 setupCharacter(player.Character or player.CharacterAdded:Wait())
 player.CharacterAdded:Connect(setupCharacter)
 
---========================================
--- ESTADOS
---========================================
+--// ESTADOS
 local noclip = false
 local speed = false
 local fly = false
@@ -31,12 +25,10 @@ local normalSpeed = 16
 local fastSpeed = 60
 local flySpeed = 80
 
---========================================
--- NOCLIP (REAL)
---========================================
+--// NOCLIP
 RunService.Stepped:Connect(function()
 	if noclip and character then
-		for _, v in ipairs(character:GetDescendants()) do
+		for _, v in pairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
 			end
@@ -44,18 +36,14 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---========================================
--- SPEED
---========================================
+--// SPEED
 local function updateSpeed()
 	if humanoid then
 		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 	end
 end
 
---========================================
--- FLY (REAL)
---========================================
+--// FLY
 local bv, bg
 local flyDir = {f=0,b=0,l=0,r=0,u=0,d=0}
 
@@ -82,7 +70,6 @@ end
 
 RunService.RenderStepped:Connect(function()
 	if not fly or not rootPart then return end
-
 	local cam = workspace.CurrentCamera
 	local dir = Vector3.zero
 
@@ -97,105 +84,68 @@ RunService.RenderStepped:Connect(function()
 	bg.CFrame = cam.CFrame
 end)
 
---========================================
--- TP FORWARD
---========================================
+--// TP
 local function tpForward()
 	if rootPart then
 		rootPart.CFrame += rootPart.CFrame.LookVector * 10
 	end
 end
 
---========================================
--- FUNCIONES GLOBALES (BOTONES)
---========================================
-_G.ToggleFly = function()
-	if fly then stopFly() else startFly() end
-end
-
-_G.ToggleNoClip = function()
-	noclip = not noclip
-end
-
-_G.ToggleSpeed = function()
-	speed = not speed
-	updateSpeed()
-end
-
+--// TOGGLES
+_G.ToggleNoClip = function() noclip = not noclip end
+_G.ToggleSpeed = function() speed = not speed updateSpeed() end
+_G.ToggleFly = function() if fly then stopFly() else startFly() end end
 _G.TPForward = tpForward
 
---========================================
--- CONTROLES PC (EXTRA)
---========================================
-UIS.InputBegan:Connect(function(i,g)
-	if g then return end
-	if i.KeyCode == Enum.KeyCode.W then flyDir.f=1 end
-	if i.KeyCode == Enum.KeyCode.S then flyDir.b=1 end
-	if i.KeyCode == Enum.KeyCode.A then flyDir.l=1 end
-	if i.KeyCode == Enum.KeyCode.D then flyDir.r=1 end
-	if i.KeyCode == Enum.KeyCode.Space then flyDir.u=1 end
-	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=1 end
+--==================================================
+-- GUI MÓVIL (DELTA FRIENDLY)
+--==================================================
+local gui = Instance.new("ScreenGui")
+gui.Name = "MobileHackGui"
+pcall(function()
+	gui.Parent = game.CoreGui
 end)
 
-UIS.InputEnded:Connect(function(i)
-	if i.KeyCode == Enum.KeyCode.W then flyDir.f=0 end
-	if i.KeyCode == Enum.KeyCode.S then flyDir.b=0 end
-	if i.KeyCode == Enum.KeyCode.A then flyDir.l=0 end
-	if i.KeyCode == Enum.KeyCode.D then flyDir.r=0 end
-	if i.KeyCode == Enum.KeyCode.Space then flyDir.u=0 end
-	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=0 end
-end)
-
---========================================
--- GUI MÓVIL
---========================================
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "MobileMenu"
-
-local function makeBtn(txt, pos)
+local function btn(text,pos)
 	local b = Instance.new("TextButton")
 	b.Size = UDim2.new(0,60,0,60)
 	b.Position = pos
-	b.Text = txt
+	b.Text = text
 	b.TextScaled = true
-	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
+	b.BackgroundColor3 = Color3.fromRGB(25,25,35)
 	b.TextColor3 = Color3.new(1,1,1)
 	b.BorderSizePixel = 0
 	b.Parent = gui
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
 	return b
 end
 
 -- BOTONES
-local flyBtn     = makeBtn("FLY", UDim2.new(0.05,0,0.6,0))
-local noclipBtn  = makeBtn("NO\nCLIP", UDim2.new(0.05,0,0.7,0))
-local speedBtn   = makeBtn("SPEED", UDim2.new(0.05,0,0.8,0))
-local tpBtn      = makeBtn("TP", UDim2.new(0.05,0,0.9,0))
+local flyBtn   = btn("FLY",UDim2.new(0.03,0,0.55,0))
+local noclipBtn= btn("NO\nCLIP",UDim2.new(0.03,0,0.65,0))
+local speedBtn = btn("SPEED",UDim2.new(0.03,0,0.75,0))
+local tpBtn    = btn("TP",UDim2.new(0.03,0,0.85,0))
 
-local upBtn      = makeBtn("↑", UDim2.new(0.85,0,0.65,0))
-local downBtn    = makeBtn("↓", UDim2.new(0.85,0,0.8,0))
-local leftBtn    = makeBtn("⇦", UDim2.new(0.75,0,0.75,0))
-local rightBtn   = makeBtn("⇨", UDim2.new(0.95,0,0.75,0))
-local forwardBtn = makeBtn("▲", UDim2.new(0.85,0,0.55,0))
+local up    = btn("↑",UDim2.new(0.85,0,0.6,0))
+local down  = btn("↓",UDim2.new(0.85,0,0.8,0))
+local left  = btn("←",UDim2.new(0.75,0,0.7,0))
+local right = btn("→",UDim2.new(0.95,0,0.7,0))
+local fwd   = btn("▲",UDim2.new(0.85,0,0.5,0))
 
--- TOGGLES
+-- CLICK
 flyBtn.MouseButton1Click:Connect(_G.ToggleFly)
 noclipBtn.MouseButton1Click:Connect(_G.ToggleNoClip)
 speedBtn.MouseButton1Click:Connect(_G.ToggleSpeed)
 tpBtn.MouseButton1Click:Connect(_G.TPForward)
 
--- MOVIMIENTO FLY (MANTENER)
-local function hold(btn, key)
-	btn.MouseButton1Down:Connect(function()
-		flyDir[key] = 1
-	end)
-	btn.MouseButton1Up:Connect(function()
-		flyDir[key] = 0
-	end)
+-- HOLD
+local function hold(b,k)
+	b.MouseButton1Down:Connect(function() flyDir[k]=1 end)
+	b.MouseButton1Up:Connect(function() flyDir[k]=0 end)
 end
 
-hold(upBtn,"u")
-hold(downBtn,"d")
-hold(leftBtn,"l")
-hold(rightBtn,"r")
-hold(forwardBtn,"f")
+hold(up,"u")
+hold(down,"d")
+hold(left,"l")
+hold(right,"r")
+hold(fwd,"f")
