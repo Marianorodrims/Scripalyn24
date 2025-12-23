@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.45,0,0.6,0) -- aumentado un poco
+frame.Size = UDim2.new(0.5,0,0.65,0) -- aumentado un poco más
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -177,6 +177,7 @@ local function makeButton(txt)
 	return b
 end
 
+--// BOTONES
 local noclipBtn = makeButton("NoClip: OFF")
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
