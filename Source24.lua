@@ -1,180 +1,157 @@
--- Variables de configuración
-local player = game.Players.LocalPlayer
+--// SERVICIOS
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+--// PLAYER
+local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local userInputService = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Estado de las funciones
-local noClipEnabled = false
-local speedEnabled = false
-local flyEnabled = false
-local originalWalkSpeed = humanoid.WalkSpeed
-local currentWalkSpeed = 50 -- Velocidad inicial
-local flySpeed = 75
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	rootPart = char:WaitForChild("HumanoidRootPart")
+end)
 
--- Función para NoClip (traspasar paredes)
-local function enableNoClip()
-    if noClipEnabled then
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide == true then
-                part.CanCollide = false
-            end
-        end
-    else
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide == false then
-                part.CanCollide = true
-            end
-        end
-    end
+--// ESTADOS
+local noclip = false
+local speed = false
+local fly = false
+
+local normalSpeed = 16
+local fastSpeed = 60
+local flySpeed = 70
+
+--// NOCLIP REAL
+RunService.Stepped:Connect(function()
+	if noclip and character then
+		for _,v in pairs(character:GetDescendants()) do
+			if v:IsA("BasePart") then
+				v.CanCollide = false
+			end
+		end
+	end
+end)
+
+--// SPEED
+local function updateSpeed()
+	if humanoid then
+		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
+	end
 end
 
--- Función para TP Forward (Empujón hacia adelante al presionar E)
+--// FLY REAL (MÓVIL + PC)
+local bv, bg
+local function startFly()
+	if fly then return end
+	fly = true
+
+	bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+	bv.Parent = rootPart
+
+	bg = Instance.new("BodyGyro")
+	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+	bg.Parent = rootPart
+
+	RunService.RenderStepped:Connect(function()
+		if not fly then return end
+		local cam = workspace.CurrentCamera
+		bv.Velocity = cam.CFrame.LookVector * flySpeed
+		bg.CFrame = cam.CFrame
+	end)
+end
+
+local function stopFly()
+	fly = false
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
+end
+
+--// TP FORWARD
 local function tpForward()
-    if noClipEnabled then
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            local lookVector = rootPart.CFrame.lookVector
-            rootPart.CFrame = rootPart.CFrame + (lookVector * 8) -- Empujón de 8 studs
-        end
-    end
+	if rootPart then
+		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	end
 end
 
--- Función para Speed (correr rápido)
-local function enableSpeed()
-    if speedEnabled then
-        humanoid.WalkSpeed = currentWalkSpeed
-    else
-        humanoid.WalkSpeed = originalWalkSpeed
-    end
-end
-
--- Controles de vuelo
-local flyControl = {f = 0, b = 0, l = 0, r = 0, u = 0, d = 0}
-local function fly()
-    if not flyEnabled then return end
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    local cam = workspace.CurrentCamera
-    local dir = Vector3.new()
-
-    if flyControl.f == 1 then dir = dir + cam.CFrame.lookVector end
-    if flyControl.b == 1 then dir = dir - cam.CFrame.lookVector end
-    if flyControl.l == 1 then dir = dir * CFrame.Angles(0, math.rad(90), 0).p end
-    if flyControl.r == 1 then dir = dir * CFrame.Angles(0, math.rad(-90), 0).p end
-    if flyControl.u == 1 then dir = dir + Vector3.new(0, 1, 0) end
-    if flyControl.d == 1 then dir = dir - Vector3.new(0, 1, 0) end
-
-    if dir ~= Vector3.new() then
-        rootPart.Velocity = dir.unit * flySpeed
-    else
-        rootPart.Velocity = Vector3.new(0, 0, 0)
-    end
-    humanoid.Jump = false
-end
-
--- Función para salir de la base (teletransportarse fuera)
+--// ESCAPE
 local function escapeBase()
-    character:SetPrimaryPartCFrame(CFrame.new(0, 250, 0))
+	if rootPart then
+		rootPart.CFrame = CFrame.new(0, 250, 0)
+	end
 end
 
--- Crear la interfaz de usuario (GUI) elegante y funcional
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CheatMenu"
-screenGui.Parent = game:GetService("CoreGui")
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+----------------------------------------------------------------
+--// GUI (MÓVIL FRIENDLY)
+----------------------------------------------------------------
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Parent = screenGui
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -175)
-mainFrame.Size = UDim2.new(0, 350, 0, 350)
-mainFrame.Active = true -- Permite que el frame reciba inputs
-mainFrame.Draggable = true -- Hace el frame arrastrable
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainRotMenu"
+gui.Parent = game:GetService("CoreGui")
+gui.ResetOnSpawn = false
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainFrame
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0.85,0,0.55,0)
+frame.Position = UDim2.new(0.075,0,0.22,0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
+frame.Active = true
+frame.Draggable = true
 
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "TitleLabel"
-titleLabel.Parent = mainFrame
-titleLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-titleLabel.BorderSizePixel = 0
-titleLabel.Size = UDim2.new(1, 0, 0, 35)
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "BrainRot Stealer Pro"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 18
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
-titleCorner.Parent = titleLabel
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
--- Función para crear botones estilizados (ahora sí está definida)
-local function createStyledButton(text, pos, size, parent)
-    local button = Instance.new("TextButton")
-    button.Parent = parent or mainFrame
-    button.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-    button.BorderSizePixel = 0
-    button.Position = pos
-    button.Size = size
-    button.Font = Enum.Font.Gotham
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 16
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = button
-    return button
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(35,35,50)
+title.Text = "BrainRot Stealer Pro"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
+
+--// BOTÓN CREATOR
+local function makeButton(txt, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(0.9,0,0,45)
+	b.Position = UDim2.new(0.05,0,0,y)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
+	b.Text = txt
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 16
+	b.TextColor3 = Color3.new(1,1,1)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	return b
 end
 
--- Botón de NoClip / TP Forward
-local noClipButton = createStyledButton("NoClip: OFF", UDim2.new(0, 10, 0, 50), UDim2.new(0, 160, 0, 40))
-noClipButton.MouseButton1Click:Connect(function()
-    noClipEnabled = not noClipEnabled
-    noClipButton.Text = "NoClip: " .. (noClipEnabled and "ON (Presiona E)" or "OFF")
-    noClipButton.BackgroundColor3 = noClipEnabled and Color3.fromRGB(25, 85, 25) or Color3.fromRGB(45, 45, 60)
-    enableNoClip()
+--// BOTONES
+local noclipBtn = makeButton("NoClip: OFF", 55)
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
--- Botón de Speed
-local speedButton = createStyledButton("Speed: OFF", UDim2.new(0, 180, 0, 50), UDim2.new(0, 160, 0, 40))
-speedButton.MouseButton1Click:Connect(function()
-    speedEnabled = not speedEnabled
-    speedButton.Text = "Speed: " .. (speedEnabled and ("ON ("..currentWalkSpeed..")") or "OFF")
-    speedButton.BackgroundColor3 = speedEnabled and Color3.fromRGB(25, 85, 25) or Color3.fromRGB(45, 45, 60)
-    enableSpeed()
+local speedBtn = makeButton("Speed: OFF", 110)
+speedBtn.MouseButton1Click:Connect(function()
+	speed = not speed
+	updateSpeed()
+	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
 end)
 
--- Botón de Volar
-local flyButton = createStyledButton("Fly: OFF", UDim2.new(0, 10, 0, 100), UDim2.new(0, 160, 0, 40))
-flyButton.MouseButton1Click:Connect(function()
-    flyEnabled = not flyEnabled
-    flyButton.Text = "Fly: " .. (flyEnabled and "ON (WASD+Shift)" or "OFF")
-    flyButton.BackgroundColor3 = flyEnabled and Color3.fromRGB(25, 85, 25) or Color3.fromRGB(45, 45, 60)
-    if not flyEnabled then
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart then rootPart.Velocity = Vector3.new(0, 0, 0) end
-    end
+local flyBtn = makeButton("Fly: OFF", 165)
+flyBtn.MouseButton1Click:Connect(function()
+	if fly then
+		stopFly()
+		flyBtn.Text = "Fly: OFF"
+	else
+		startFly()
+		flyBtn.Text = "Fly: ON"
+	end
 end)
 
--- Botón de Escape
-local escapeButton = createStyledButton("Escape Base", UDim2.new(0, 180, 0, 100), UDim2.new(0, 160, 0, 40))
-escapeButton.MouseButton1Click:Connect(function()
-    escapeBase()
-end)
+local tpBtn = makeButton("TP Forward", 220)
+tpBtn.MouseButton1Click:Connect(tpForward)
 
--- Contenedor para los botones de velocidad
-local speedControlFrame = Instance.new("Frame")
-speedControlFrame.Name = "SpeedControlFrame"
-speedControlFrame.Parent = mainFrame
-speedControlFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-speedControlFrame.BorderSizePixel = 0
-speedControlFrame.Position = UDim2.new(0, 10, 0, 150)
-speedControlFrame.Size = UDim2.new(0, 330, 0, 40)
-local speedFrameCorner = Instance.new("UICorner")
-speedFrameCorner.CornerRadius = U
+local escBtn = makeButton("Escape Base", 275)
+escBtn.MouseButton1Click:Connect(escapeBase)
