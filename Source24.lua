@@ -22,8 +22,10 @@ local fly = false
 local highJump = false -- estado de salto alto
 
 local normalSpeed = 16
-local fastSpeed = 100 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local fastSpeed = 80 -- Súper rápido
+local flySpeed = 30 -- Vuelo más lento y controlable
+local jumpPowerNormal = humanoid.JumpPower
+local jumpMultiplier = 4 -- Multiplicador de salto alto extremo
 
 --// NOCLIP REAL
 RunService.Stepped:Connect(function()
@@ -86,14 +88,20 @@ local function escapeBase()
 end
 
 --// SALTO ALTO / INFINITO
-local jumpPowerNormal = humanoid.JumpPower
-local jumpMultiplier = 2 -- multiplicador de salto
+local jumpPowerCurrent = jumpPowerNormal
+local lastJumpTime = 0
+local jumpCooldown = 0.05
 
-humanoid.StateChanged:Connect(function(oldState, newState)
-	if highJump and newState == Enum.HumanoidStateType.Jumping then
-		humanoid.JumpPower = humanoid.JumpPower * jumpMultiplier
-		wait(0.05)
-		humanoid.Jump = true
+RunService.Stepped:Connect(function()
+	if highJump and humanoid then
+		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
+			lastJumpTime = tick()
+			humanoid.JumpPower = jumpPowerCurrent
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			jumpPowerCurrent = jumpPowerCurrent * 1.2 -- cada salto en el aire sube más
+		end
+	else
+		jumpPowerCurrent = jumpPowerNormal
 	end
 end)
 
