@@ -25,7 +25,7 @@ local normalSpeed = 16
 local fastSpeed = 60
 local flySpeed = 80
 
---// NOCLIP
+--// NOCLIP REAL
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _, v in pairs(character:GetDescendants()) do
@@ -43,7 +43,7 @@ local function updateSpeed()
 	end
 end
 
---// FLY
+--// FLY REAL
 local bv, bg
 local flyDir = {f=0,b=0,l=0,r=0,u=0,d=0}
 
@@ -68,8 +68,10 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
+-- Movimiento Fly (PC + MÓVIL)
 RunService.RenderStepped:Connect(function()
 	if not fly or not rootPart then return end
+
 	local cam = workspace.CurrentCamera
 	local dir = Vector3.zero
 
@@ -84,68 +86,71 @@ RunService.RenderStepped:Connect(function()
 	bg.CFrame = cam.CFrame
 end)
 
---// TP
+--// CONTROLES FLY PC
+UIS.InputBegan:Connect(function(i,g)
+	if g then return end
+	if i.KeyCode == Enum.KeyCode.W then flyDir.f=1 end
+	if i.KeyCode == Enum.KeyCode.S then flyDir.b=1 end
+	if i.KeyCode == Enum.KeyCode.A then flyDir.l=1 end
+	if i.KeyCode == Enum.KeyCode.D then flyDir.r=1 end
+	if i.KeyCode == Enum.KeyCode.Space then flyDir.u=1 end
+	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=1 end
+end)
+
+UIS.InputEnded:Connect(function(i)
+	if i.KeyCode == Enum.KeyCode.W then flyDir.f=0 end
+	if i.KeyCode == Enum.KeyCode.S then flyDir.b=0 end
+	if i.KeyCode == Enum.KeyCode.A then flyDir.l=0 end
+	if i.KeyCode == Enum.KeyCode.D then flyDir.r=0 end
+	if i.KeyCode == Enum.KeyCode.Space then flyDir.u=0 end
+	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=0 end
+end)
+
+--====================================================
+-- SOPORTE MÓVIL (SIN TOCAR TU DISEÑO)
+--====================================================
+if UIS.TouchEnabled then
+	print("📱 Fly móvil activo")
+
+	-- En móvil: avanzar automático al volar
+	RunService.RenderStepped:Connect(function()
+		if fly then
+			flyDir.f = 1
+		else
+			flyDir.f = 0
+		end
+	end)
+
+	-- Tocar pantalla = subir
+	UIS.TouchStarted:Connect(function()
+		flyDir.u = 1
+	end)
+
+	-- Soltar = dejar de subir
+	UIS.TouchEnded:Connect(function()
+		flyDir.u = 0
+	end)
+end
+
+--// TP FORWARD
 local function tpForward()
 	if rootPart then
 		rootPart.CFrame += rootPart.CFrame.LookVector * 10
 	end
 end
 
---// TOGGLES
-_G.ToggleNoClip = function() noclip = not noclip end
-_G.ToggleSpeed = function() speed = not speed updateSpeed() end
-_G.ToggleFly = function() if fly then stopFly() else startFly() end end
+--// TOGGLES (USADOS POR TU GUI)
+_G.ToggleNoClip = function()
+	noclip = not noclip
+end
+
+_G.ToggleSpeed = function()
+	speed = not speed
+	updateSpeed()
+end
+
+_G.ToggleFly = function()
+	if fly then stopFly() else startFly() end
+end
+
 _G.TPForward = tpForward
-
---==================================================
--- GUI MÓVIL (DELTA FRIENDLY)
---==================================================
-local gui = Instance.new("ScreenGui")
-gui.Name = "MobileHackGui"
-pcall(function()
-	gui.Parent = game.CoreGui
-end)
-
-local function btn(text,pos)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0,60,0,60)
-	b.Position = pos
-	b.Text = text
-	b.TextScaled = true
-	b.BackgroundColor3 = Color3.fromRGB(25,25,35)
-	b.TextColor3 = Color3.new(1,1,1)
-	b.BorderSizePixel = 0
-	b.Parent = gui
-	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
-	return b
-end
-
--- BOTONES
-local flyBtn   = btn("FLY",UDim2.new(0.03,0,0.55,0))
-local noclipBtn= btn("NO\nCLIP",UDim2.new(0.03,0,0.65,0))
-local speedBtn = btn("SPEED",UDim2.new(0.03,0,0.75,0))
-local tpBtn    = btn("TP",UDim2.new(0.03,0,0.85,0))
-
-local up    = btn("↑",UDim2.new(0.85,0,0.6,0))
-local down  = btn("↓",UDim2.new(0.85,0,0.8,0))
-local left  = btn("←",UDim2.new(0.75,0,0.7,0))
-local right = btn("→",UDim2.new(0.95,0,0.7,0))
-local fwd   = btn("▲",UDim2.new(0.85,0,0.5,0))
-
--- CLICK
-flyBtn.MouseButton1Click:Connect(_G.ToggleFly)
-noclipBtn.MouseButton1Click:Connect(_G.ToggleNoClip)
-speedBtn.MouseButton1Click:Connect(_G.ToggleSpeed)
-tpBtn.MouseButton1Click:Connect(_G.TPForward)
-
--- HOLD
-local function hold(b,k)
-	b.MouseButton1Down:Connect(function() flyDir[k]=1 end)
-	b.MouseButton1Up:Connect(function() flyDir[k]=0 end)
-end
-
-hold(up,"u")
-hold(down,"d")
-hold(left,"l")
-hold(right,"r")
-hold(fwd,"f")
