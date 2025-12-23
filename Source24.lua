@@ -21,7 +21,7 @@ local fly = false
 
 local normalSpeed = 16
 local fastSpeed = 120 -- SPEED ULTRA
-local flySpeed = 70
+local flySpeed = 35   -- VUELO MÁS SUAVE
 
 --// NOCLIP REAL
 RunService.Stepped:Connect(function()
@@ -38,34 +38,29 @@ end)
 RunService.RenderStepped:Connect(function()
 	if speed and rootPart then
 		humanoid.WalkSpeed = fastSpeed
-		local moveDir = humanoid.MoveDirection
-		if moveDir.Magnitude > 0 then
-			rootPart.Velocity = Vector3.new(
-				moveDir.X * 90,
-				rootPart.Velocity.Y,
-				moveDir.Z * 90
-			)
-		end
 	else
 		humanoid.WalkSpeed = normalSpeed
 	end
 end)
 
---// FLY
+--// FLY SUAVE (MÓVIL + PC)
 local bv, bg
 local function startFly()
 	if fly then return end
 	fly = true
 
-	bv = Instance.new("BodyVelocity", rootPart)
+	bv = Instance.new("BodyVelocity")
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+	bv.Parent = rootPart
 
-	bg = Instance.new("BodyGyro", rootPart)
+	bg = Instance.new("BodyGyro")
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+	bg.Parent = rootPart
 
 	RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
+		-- VUELO SUAVE: multiplicador reducido para no ser violento
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
 		bg.CFrame = cam.CFrame
 	end)
@@ -77,56 +72,51 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP + ESCAPE
+--// TP FORWARD
 local function tpForward()
-	rootPart.CFrame += rootPart.CFrame.LookVector * 12
+	if rootPart then
+		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	end
 end
 
+--// ESCAPE BASE
 local function escapeBase()
-	rootPart.CFrame = CFrame.new(0, 250, 0)
+	if rootPart then
+		rootPart.CFrame = CFrame.new(0, 250, 0)
+	end
 end
 
 ----------------------------------------------------------------
---// GUI
+--// GUI (MÓVIL FRIENDLY)
 ----------------------------------------------------------------
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.85,0,0.55,0)
-frame.Position = UDim2.new(0.075,0,0.22,0)
+frame.Size = UDim2.new(0.5,0,0.5,0) -- REDUCIDO PARA QUE NO SEA TAN GRANDE
+frame.Position = UDim2.new(0.25,0,0.25,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
---// TITULO
-local title = Instance.new("Frame", frame)
+--// TITULO (solo letras elegantes)
+local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
+title.Text = "BrainRot Stealer Pro"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
-local titleLabel = Instance.new("TextLabel", title)
-titleLabel.Size = UDim2.new(1,0,1,0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "BrainRot Stealer Pro"
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 18
-titleLabel.TextColor3 = Color3.new(1,1,1)
-
---// LOGO EN ESQUINA IZQUIERDA
-local logo = Instance.new("ImageLabel", title)
-logo.Size = UDim2.new(0,28,0,28)
-logo.Position = UDim2.new(0,6,0.5,-14) -- arriba izquierda
-logo.BackgroundTransparency = 1
-logo.Image = "rbxassetid://AQUI_PONES_TU_ID_DE_IMAGEN"
-
---// CREAR BOTONES
+--// BOTÓN CREATOR
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.9,0,0,45)
+	b.Size = UDim2.new(0.9,0,0,40) -- REDUCIDO PARA QUE QUEDE BIEN
 	b.Position = UDim2.new(0.05,0,0,y)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
