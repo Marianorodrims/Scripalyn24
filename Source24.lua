@@ -19,15 +19,11 @@ local noclip = false
 local speed = false
 local fly = false
 
---// VALORES
 local normalSpeed = 16
-local fastSpeed = 120 -- 🔥 MÁS RÁPIDO
-local speedBoost = 90 -- empuje extra
+local fastSpeed = 120 -- SPEED ULTRA
 local flySpeed = 70
 
-----------------------------------------------------------------
---// NOCLIP
-----------------------------------------------------------------
+--// NOCLIP REAL
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -38,18 +34,16 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-----------------------------------------------------------------
---// SPEED ULTRA (REAL)
-----------------------------------------------------------------
+--// SPEED ULTRA
 RunService.RenderStepped:Connect(function()
 	if speed and rootPart then
 		humanoid.WalkSpeed = fastSpeed
 		local moveDir = humanoid.MoveDirection
 		if moveDir.Magnitude > 0 then
 			rootPart.Velocity = Vector3.new(
-				moveDir.X * speedBoost,
+				moveDir.X * 90,
 				rootPart.Velocity.Y,
-				moveDir.Z * speedBoost
+				moveDir.Z * 90
 			)
 		end
 	else
@@ -57,9 +51,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-----------------------------------------------------------------
 --// FLY
-----------------------------------------------------------------
 local bv, bg
 local function startFly()
 	if fly then return end
@@ -85,9 +77,7 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
-----------------------------------------------------------------
 --// TP + ESCAPE
-----------------------------------------------------------------
 local function tpForward()
 	rootPart.CFrame += rootPart.CFrame.LookVector * 12
 end
@@ -99,7 +89,9 @@ end
 ----------------------------------------------------------------
 --// GUI
 ----------------------------------------------------------------
-local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainRotMenu"
+gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
@@ -111,26 +103,28 @@ frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
 --// TITULO
-local title = Instance.new("TextLabel", frame)
+local title = Instance.new("Frame", frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
-title.Text = "BrainRot Stealer Pro"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
---// LOGO (ESQUINA IZQUIERDA)
+local titleLabel = Instance.new("TextLabel", title)
+titleLabel.Size = UDim2.new(1,0,1,0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "BrainRot Stealer Pro"
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 18
+titleLabel.TextColor3 = Color3.new(1,1,1)
+
+--// LOGO EN ESQUINA IZQUIERDA
 local logo = Instance.new("ImageLabel", title)
 logo.Size = UDim2.new(0,28,0,28)
-logo.Position = UDim2.new(0,6,0.5,-14)
+logo.Position = UDim2.new(0,6,0.5,-14) -- arriba izquierda
 logo.BackgroundTransparency = 1
-logo.Image = "https://images-platform.99static.com//UUYpXRPoW4zZsS-8aKdYShUzQNk=/0x0:1812x1812/fit-in/590x590/99designs-contests-attachments/132/132674/attachment_132674120"
+logo.Image = "rbxassetid://AQUI_PONES_TU_ID_DE_IMAGEN"
 
-----------------------------------------------------------------
---// BOTONES
-----------------------------------------------------------------
-local function btn(txt,y)
+--// CREAR BOTONES
+local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.9,0,0,45)
 	b.Position = UDim2.new(0.05,0,0,y)
@@ -143,22 +137,32 @@ local function btn(txt,y)
 	return b
 end
 
-local b1 = btn("NoClip: OFF",55)
-b1.MouseButton1Click:Connect(function()
+--// BOTONES
+local noclipBtn = makeButton("NoClip: OFF", 55)
+noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
-	b1.Text = "NoClip: "..(noclip and "ON" or "OFF")
+	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local b2 = btn("Speed: OFF",110)
-b2.MouseButton1Click:Connect(function()
+local speedBtn = makeButton("Speed: OFF", 110)
+speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
-	b2.Text = "Speed: "..(speed and "ULTRA" or "OFF")
+	speedBtn.Text = "Speed: "..(speed and "ULTRA" or "OFF")
 end)
 
-local b3 = btn("Fly: OFF",165)
-b3.MouseButton1Click:Connect(function()
-	if fly then stopFly() b3.Text="Fly: OFF" else startFly() b3.Text="Fly: ON" end
+local flyBtn = makeButton("Fly: OFF", 165)
+flyBtn.MouseButton1Click:Connect(function()
+	if fly then
+		stopFly()
+		flyBtn.Text = "Fly: OFF"
+	else
+		startFly()
+		flyBtn.Text = "Fly: ON"
+	end
 end)
 
-btn("TP Forward",220).MouseButton1Click:Connect(tpForward)
-btn("Escape Base",275).MouseButton1Click:Connect(escapeBase)
+local tpBtn = makeButton("TP Forward", 220)
+tpBtn.MouseButton1Click:Connect(tpForward)
+
+local escBtn = makeButton("Escape Base", 275)
+escBtn.MouseButton1Click:Connect(escapeBase)
