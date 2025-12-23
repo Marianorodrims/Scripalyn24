@@ -22,10 +22,10 @@ local fly = false
 local highJump = false -- estado de salto alto
 
 local normalSpeed = 16
-local fastSpeed = 80 -- Súper rápido
-local flySpeed = 30 -- Vuelo más lento y controlable
+local fastSpeed = 150 -- Súper rápido
+local flySpeed = 25 -- Vuelo más lento y controlable
 local jumpPowerNormal = humanoid.JumpPower
-local jumpMultiplier = 4 -- Multiplicador de salto alto extremo
+local jumpMultiplier = 10 -- Multiplicador de salto alto extremo
 
 --// NOCLIP REAL
 RunService.Stepped:Connect(function()
@@ -208,7 +208,6 @@ tpBtn.MouseButton1Click:Connect(tpForward)
 local escBtn = makeButton("Escape Base", 4)
 escBtn.MouseButton1Click:Connect(escapeBase)
 
---// BOTÓN SALTO ALTO
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
 	highJump = not highJump
@@ -216,6 +215,30 @@ jumpBtn.MouseButton1Click:Connect(function()
 		humanoid.JumpPower = jumpPowerNormal
 	end
 	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
+end)
+
+--// FPS DISPLAY
+local fpsLabel = Instance.new("TextLabel", frame)
+fpsLabel.Size = UDim2.new(0.4,0,0,25)
+fpsLabel.Position = UDim2.new(0.05,0,1,-30) -- abajo izquierda
+fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
+fpsLabel.TextColor3 = Color3.new(1,1,1)
+fpsLabel.Font = Enum.Font.Gotham
+fpsLabel.TextSize = 14
+fpsLabel.Text = "FPS: 0"
+Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
+
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+	frameCount = frameCount + 1
+	local now = tick()
+	if now - lastTime >= 1 then
+		fpsLabel.Text = "FPS: "..frameCount
+		frameCount = 0
+		lastTime = now
+	end
 end)
 
 ----------------------------------------------------------------
