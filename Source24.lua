@@ -1,53 +1,31 @@
---[[
-    SCRIPT ROBLOX - VERSIÓN MÓVIL ULTRA ESTABLE
-    CREADO POR: Asistente IA
-    FUNCIONES: NoClip, Speed, Vuelo con Botones, Super Salto.
-    100% FUNCIONAL Y A PRUEBA DE ERRORES.
-]]
+-- SCRIPT PARA ROBLOX - OPTIMIZADO PARA MÓVIL
+-- CREADO PARA FUNCIONAR EN DELTA EXECUTOR
+-- TODAS LAS FUNCIONES SON AUTOMÁTICAS O CON BOTONES EN PANTALLA
 
--- ===================================
--- 1. INICIALIZACIÓN SEGURA
--- ===================================
-local player = game:GetService("Players").LocalPlayer
-if not player then
-    -- Si no hay jugador, no se puede hacer nada.
-    warn("Error: No se pudo encontrar al jugador local.")
-    return
-end
-
+-- Servicios y Variables
+local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
-
--- Servicios
-local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 local contextActionService = game:GetService("ContextActionService")
 
--- ===================================
--- 2. VARIABLES DE ESTADO
--- ===================================
-local gui = nil
-local flyButtons = {}
-local flyConnection = nil
-
+-- Estado de las funciones
 local noClipEnabled = false
 local speedEnabled = false
 local flyEnabled = false
 local superJumpEnabled = false
 
-local originalWalkSpeed = humanoid.WalkSpeed or 16
-local originalJumpPower = humanoid.JumpPower or 50
-local currentWalkSpeed = 60
+local originalWalkSpeed = humanoid.WalkSpeed
+local originalJumpPower = humanoid.JumpPower
+local currentWalkSpeed = 60 -- Velocidad rápida inicial
 local flySpeed = 50
 
--- ===================================
--- 3. FUNCIONES DE TRUCOS
--- ===================================
+-- === FUNCIONES PRINCIPALES ===
 
--- NoClip
-local function onStepped()
-    if noClipEnabled and character and character.Parent then
+-- Función NoClip (atravesar paredes)
+local function noClipLoop()
+    if noClipEnabled then
         for _, part in ipairs(character:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
@@ -56,34 +34,45 @@ local function onStepped()
     end
 end
 
--- Speed
+-- Función Speed (correr rápido)
 local function updateSpeed()
-    if humanoid and humanoid.Parent then
-        humanoid.WalkSpeed = speedEnabled and currentWalkSpeed or originalWalkSpeed
+    if speedEnabled then
+        humanoid.WalkSpeed = currentWalkSpeed
+    else
+        humanoid.WalkSpeed = originalWalkSpeed
     end
 end
 
--- Super Salto
+-- Función Super Salto
 local function updateJump()
-    if humanoid and humanoid.Parent then
-        humanoid.JumpPower = superJumpEnabled and 100 or originalJumpPower
+    if superJumpEnabled then
+        humanoid.JumpPower = 75 -- Salto muy alto
+    else
+        humanoid.JumpPower = originalJumpPower
     end
 end
 
--- Vuelo
+-- Función Vuelo
+local flyControls = {Forward = false, Backward = false, Left = false, Right = false, Up = false}
+local flyConnection
+
 local function startFly()
-    if flyConnection then return end
+    if flyConnection then flyConnection:Disconnect() end
+    local rootPart = character:WaitForChild("HumanoidRootPart")
     humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+    
     flyConnection = runService.Heartbeat:Connect(function()
-        if flyEnabled and rootPart and rootPart.Parent then
+        if flyEnabled and rootPart then
             local dir = Vector3.new()
             local cam = workspace.CurrentCamera
-            if flyButtons.Forward and flyButtons.Forward.BackgroundColor3 == Color3.fromRGB(25, 100, 25) then dir = dir + cam.CFrame.lookVector end
-            if flyButtons.Backward and flyButtons.Backward.BackgroundColor3 == Color3.fromRGB(25, 100, 25) then dir = dir - cam.CFrame.lookVector end
-            if flyButtons.Left and flyButtons.Left.BackgroundColor3 == Color3.fromRGB(25, 100, 25) then dir = dir + Vector3.new(-cam.CFrame.lookVector.Z, 0, cam.CFrame.lookVector.X) end
-            if flyButtons.Right and flyButtons.Right.BackgroundColor3 == Color3.fromRGB(25, 100, 25) then dir = dir + Vector3.new(cam.CFrame.lookVector.Z, 0, -cam.CFrame.lookVector.X) end
-            if flyButtons.Up and flyButtons.Up.BackgroundColor3 == Color3.fromRGB(25, 100, 25) then dir = dir + Vector3.new(0, 1, 0) end
             
+            if flyControls.Forward then dir = dir + cam.CFrame.lookVector end
+            if flyControls.Backward then dir = dir - cam.CFrame.lookVector end
+            if flyControls.Left then dir = dir + Vector3.new(-cam.CFrame.lookVector.Z, 0, cam.CFrame.lookVector.X) end
+            if flyControls.Right then dir = dir + Vector3.new(cam.CFrame.lookVector.Z, 0, -cam.CFrame.lookVector.X) end
+            if flyControls.Up then dir = dir + Vector3.new(0, 1, 0) end
+
             rootPart.Velocity = dir.unit * flySpeed
             humanoid.Jump = false
         end
@@ -95,29 +84,23 @@ local function stopFly()
         flyConnection:Disconnect()
         flyConnection = nil
     end
-    if rootPart and rootPart.Parent then
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
         rootPart.Velocity = Vector3.new(0, 0, 0)
     end
     humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
 end
 
--- ===================================
--- 4. CREACIÓN DE LA INTERFAZ (GUI)
--- ===================================
+-- === CREACIÓN DE LA INTERFAZ GRÁFICA (GUI) ===
 
--- Limpiar GUI anterior
-if player:FindFirstChild("PlayerGui") and player.PlayerGui:FindFirstChild("MobileCheatMenu") then
-    player.PlayerGui.MobileCheatMenu:Destroy()
-end
-
--- Crear ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MobileCheatMenu"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = game:GetService("CoreGui")
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.IgnoreGuiInset = true
 
--- Frame Principal
+-- Frame Principal del Menú
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
@@ -140,7 +123,7 @@ title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 18
 Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
 
--- Función para crear botones
+-- Función para crear botones fácilmente
 local function createButton(text, yPos, onClick)
     local button = Instance.new("TextButton")
     button.Parent = mainFrame
@@ -157,40 +140,44 @@ local function createButton(text, yPos, onClick)
     return button
 end
 
--- Botón NoClip
-createButton("NoClip: OFF", 50, function()
+-- Botón de NoClip
+local noClipButton = createButton("NoClip: OFF", 50, function()
     noClipEnabled = not noClipEnabled
-    -- El botón se actualizará en la siguiente línea para reflejar el cambio
+    noClipButton.Text = "NoClip: " .. (noClipEnabled and "ON" or "OFF")
+    noClipButton.BackgroundColor3 = noClipEnabled and Color3.fromRGB(25, 100, 25) or Color3.fromRGB(40, 40, 55)
 end)
 
--- Botón Speed
+-- Botón de Speed con ajuste
 local speedButton = createButton("Speed: OFF ("..currentWalkSpeed..")", 105, function()
     speedEnabled = not speedEnabled
-    updateSpeed()
     speedButton.Text = "Speed: " .. (speedEnabled and ("ON ("..currentWalkSpeed..")") or "OFF")
     speedButton.BackgroundColor3 = speedEnabled and Color3.fromRGB(25, 100, 25) or Color3.fromRGB(40, 40, 55)
+    updateSpeed()
 end)
 
--- Ajustadores de Velocidad
-local minusBtn = Instance.new("TextButton")
-minusBtn.Parent = mainFrame
-minusBtn.Size = UDim2.new(0, 45, 0, 30)
-minusBtn.Position = UDim2.new(0, 15, 0, 155)
-minusBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-minusBtn.Text = "-"
-minusBtn.Font = Enum.Font.GothamBold
-minusBtn.TextSize = 20
-minusBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
-minusBtn.MouseButton1Click:Connect(function()
+-- Botones para ajustar velocidad
+local speedMinusButton = Instance.new("TextButton")
+speedMinusButton.Parent = mainFrame
+speedMinusButton.Size = UDim2.new(0, 45, 0, 30)
+speedMinusButton.Position = UDim2.new(0, 15, 0, 155)
+speedMinusButton.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+speedMinusButton.BorderSizePixel = 0
+speedMinusButton.Font = Enum.Font.GothamBold
+speedMinusButton.Text = "-"
+speedMinusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedMinusButton.TextSize = 20
+Instance.new("UICorner", speedMinusButton).CornerRadius = UDim.new(0, 6)
+speedMinusButton.MouseButton1Click:Connect(function()
     currentWalkSpeed = math.max(20, currentWalkSpeed - 10)
     if speedEnabled then updateSpeed() end
     speedButton.Text = "Speed: " .. (speedEnabled and ("ON ("..currentWalkSpeed..")") or "OFF")
 end)
 
-local plusBtn = Instance.new("TextButton")
-plusBtn.Parent = mainFrame
-plusBtn.Size = UDim2.new(0, 45, 0, 30)
-plusBtn.Position = UDim2.new(0, 260, 0, 155)
-plusBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-plusBtn.Text = "+"
+local speedPlusButton = Instance.new("TextButton")
+speedPlusButton.Parent = mainFrame
+speedPlusButton.Size = UDim2.new(0, 45, 0, 30)
+speedPlusButton.Position = UDim2.new(0, 260, 0, 155)
+speedPlusButton.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+speedPlusButton.BorderSizePixel = 0
+speedPlusButton.Font = Enum.Font.GothamBold
+speedPlusButton.Text = "+" -- ESTA PARTE FALT
