@@ -23,7 +23,7 @@ local highJump = false -- estado de salto alto
 
 local normalSpeed = 16
 local fastSpeed = 100 -- Súper rápido
-local flySpeed = 50 -- Vuelo más controlable
+local flySpeed = 25 -- Vuelo más lento y controlable
 
 --// NOCLIP REAL
 RunService.Stepped:Connect(function()
