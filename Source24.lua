@@ -1,6 +1,7 @@
 --// SERVICIOS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -18,12 +19,13 @@ end)
 local noclip = false
 local speed = false
 local fly = false
+local menuVisible = true
 
 local normalSpeed = 16
 local fastSpeed = 120 -- SPEED ULTRA
-local flySpeed = 35   -- VUELO MÁS SUAVE
+local flySpeed = 35   -- VUELO SUAVE
 
---// NOCLIP REAL
+--// NOCLIP
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -34,16 +36,16 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// SPEED ULTRA
+--// SPEED
 RunService.RenderStepped:Connect(function()
-	if speed and rootPart then
+	if speed and humanoid then
 		humanoid.WalkSpeed = fastSpeed
 	else
 		humanoid.WalkSpeed = normalSpeed
 	end
 end)
 
---// FLY SUAVE (MÓVIL + PC)
+--// FLY
 local bv, bg
 local function startFly()
 	if fly then return end
@@ -60,7 +62,6 @@ local function startFly()
 	RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
-		-- VUELO SUAVE: multiplicador reducido para no ser violento
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
 		bg.CFrame = cam.CFrame
 	end)
@@ -87,7 +88,7 @@ local function escapeBase()
 end
 
 ----------------------------------------------------------------
---// GUI (MÓVIL FRIENDLY)
+--// GUI RESPONSIVE
 ----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
@@ -95,15 +96,17 @@ gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
+--// PANEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.5,0,0.5,0) -- REDUCIDO PARA QUE NO SEA TAN GRANDE
-frame.Position = UDim2.new(0.25,0,0.25,0)
+frame.AnchorPoint = Vector2.new(0.5,0.5)
+frame.Position = UDim2.new(0.5,0,0.5,0)
+frame.Size = UDim2.new(0.4,0,0.5,0) -- tamaño inicial adaptable
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
 
---// TITULO (solo letras elegantes)
+--// TITULO
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
@@ -111,12 +114,48 @@ title.Text = "BrainRot Stealer Pro"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,12)
 
---// BOTÓN CREATOR
+--// BOTON CERRAR
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0,30,0,30)
+closeBtn.Position = UDim2.new(1,-35,0,5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 18
+closeBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,6)
+
+--// BOTON PARA MOSTRAR MENU
+local showBtn = Instance.new("TextButton", gui)
+showBtn.Size = UDim2.new(0,50,0,50)
+showBtn.Position = UDim2.new(0,10,0,10)
+showBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
+showBtn.Text = "Menu"
+showBtn.Font = Enum.Font.GothamBold
+showBtn.TextSize = 14
+showBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0,8)
+showBtn.Visible = false
+
+--// FUNCIONALIDAD BOTONES OCULTAR/MOSTRAR
+closeBtn.MouseButton1Click:Connect(function()
+	frame.Visible = false
+	showBtn.Visible = true
+	menuVisible = false
+end)
+
+showBtn.MouseButton1Click:Connect(function()
+	frame.Visible = true
+	showBtn.Visible = false
+	menuVisible = true
+end)
+
+--// CREAR BOTONES OPCIONES
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.9,0,0,40) -- REDUCIDO PARA QUE QUEDE BIEN
+	b.Size = UDim2.new(0.9,0,0,40)
 	b.Position = UDim2.new(0.05,0,0,y)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
@@ -128,19 +167,19 @@ local function makeButton(txt, y)
 end
 
 --// BOTONES
-local noclipBtn = makeButton("NoClip: OFF", 55)
+local noclipBtn = makeButton("NoClip: OFF", 0.1)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
 	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF", 110)
+local speedBtn = makeButton("Speed: OFF", 0.22)
 speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
 	speedBtn.Text = "Speed: "..(speed and "ULTRA" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF", 165)
+local flyBtn = makeButton("Fly: OFF", 0.34)
 flyBtn.MouseButton1Click:Connect(function()
 	if fly then
 		stopFly()
@@ -151,8 +190,8 @@ flyBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local tpBtn = makeButton("TP Forward", 220)
+local tpBtn = makeButton("TP Forward", 0.46)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base", 275)
+local escBtn = makeButton("Escape Base", 0.58)
 escBtn.MouseButton1Click:Connect(escapeBase)
