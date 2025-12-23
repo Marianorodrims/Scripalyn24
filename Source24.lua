@@ -1,9 +1,13 @@
---// SERVICIOS
+--========================================
+-- SERVICIOS
+--========================================
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
---// PLAYER
+--========================================
+-- PLAYER
+--========================================
 local player = Players.LocalPlayer
 local character, humanoid, rootPart
 
@@ -16,7 +20,9 @@ end
 setupCharacter(player.Character or player.CharacterAdded:Wait())
 player.CharacterAdded:Connect(setupCharacter)
 
---// ESTADOS
+--========================================
+-- ESTADOS
+--========================================
 local noclip = false
 local speed = false
 local fly = false
@@ -25,10 +31,12 @@ local normalSpeed = 16
 local fastSpeed = 60
 local flySpeed = 80
 
---// NOCLIP REAL
+--========================================
+-- NOCLIP (REAL)
+--========================================
 RunService.Stepped:Connect(function()
 	if noclip and character then
-		for _, v in pairs(character:GetDescendants()) do
+		for _, v in ipairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
 			end
@@ -36,19 +44,23 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// SPEED
+--========================================
+-- SPEED
+--========================================
 local function updateSpeed()
 	if humanoid then
 		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 	end
 end
 
---// FLY REAL
+--========================================
+-- FLY (REAL)
+--========================================
 local bv, bg
 local flyDir = {f=0,b=0,l=0,r=0,u=0,d=0}
 
 local function startFly()
-	if fly then return end
+	if fly or not rootPart then return end
 	fly = true
 
 	bv = Instance.new("BodyVelocity")
@@ -60,22 +72,6 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.CFrame = rootPart.CFrame
 	bg.Parent = rootPart
-
-	RunService.RenderStepped:Connect(function()
-		if not fly then return end
-		local cam = workspace.CurrentCamera
-		local dir = Vector3.zero
-
-		if flyDir.f == 1 then dir += cam.CFrame.LookVector end
-		if flyDir.b == 1 then dir -= cam.CFrame.LookVector end
-		if flyDir.l == 1 then dir -= cam.CFrame.RightVector end
-		if flyDir.r == 1 then dir += cam.CFrame.RightVector end
-		if flyDir.u == 1 then dir += Vector3.new(0,1,0) end
-		if flyDir.d == 1 then dir -= Vector3.new(0,1,0) end
-
-		bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
-		bg.CFrame = cam.CFrame
-	end)
 end
 
 local function stopFly()
@@ -84,7 +80,53 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// CONTROLES FLY
+RunService.RenderStepped:Connect(function()
+	if not fly or not rootPart then return end
+
+	local cam = workspace.CurrentCamera
+	local dir = Vector3.zero
+
+	if flyDir.f == 1 then dir += cam.CFrame.LookVector end
+	if flyDir.b == 1 then dir -= cam.CFrame.LookVector end
+	if flyDir.l == 1 then dir -= cam.CFrame.RightVector end
+	if flyDir.r == 1 then dir += cam.CFrame.RightVector end
+	if flyDir.u == 1 then dir += Vector3.new(0,1,0) end
+	if flyDir.d == 1 then dir -= Vector3.new(0,1,0) end
+
+	bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+	bg.CFrame = cam.CFrame
+end)
+
+--========================================
+-- TP FORWARD
+--========================================
+local function tpForward()
+	if rootPart then
+		rootPart.CFrame += rootPart.CFrame.LookVector * 10
+	end
+end
+
+--========================================
+-- FUNCIONES GLOBALES (BOTONES)
+--========================================
+_G.ToggleFly = function()
+	if fly then stopFly() else startFly() end
+end
+
+_G.ToggleNoClip = function()
+	noclip = not noclip
+end
+
+_G.ToggleSpeed = function()
+	speed = not speed
+	updateSpeed()
+end
+
+_G.TPForward = tpForward
+
+--========================================
+-- CONTROLES PC (EXTRA)
+--========================================
 UIS.InputBegan:Connect(function(i,g)
 	if g then return end
 	if i.KeyCode == Enum.KeyCode.W then flyDir.f=1 end
@@ -104,34 +146,11 @@ UIS.InputEnded:Connect(function(i)
 	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=0 end
 end)
 
---// TP FORWARD
-local function tpForward()
-	if rootPart then
-		rootPart.CFrame += rootPart.CFrame.LookVector * 10
-	end
-end
-
---// EJEMPLOS DE TOGGLES (para botones)
-_G.ToggleNoClip = function()
-	noclip = not noclip
-end
-
-_G.ToggleSpeed = function()
-	speed = not speed
-	updateSpeed()
-end
-
-_G.ToggleFly = function()
-	if fly then stopFly() else startFly() end
-end
-
-_G.TPForward = tpForward
-
---// ===== MOBILE CONTROLS =====
-local playerGui = player:WaitForChild("PlayerGui")
-
-local mobileGui = Instance.new("ScreenGui", playerGui)
-mobileGui.Name = "MobileControls"
+--========================================
+-- GUI MÓVIL
+--========================================
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "MobileMenu"
 
 local function makeBtn(txt, pos)
 	local b = Instance.new("TextButton")
@@ -142,8 +161,7 @@ local function makeBtn(txt, pos)
 	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
 	b.TextColor3 = Color3.new(1,1,1)
 	b.BorderSizePixel = 0
-	b.Parent = mobileGui
-	b.AutoButtonColor = true
+	b.Parent = gui
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
 	return b
 end
@@ -161,23 +179,12 @@ local rightBtn   = makeBtn("⇨", UDim2.new(0.95,0,0.75,0))
 local forwardBtn = makeBtn("▲", UDim2.new(0.85,0,0.55,0))
 
 -- TOGGLES
-flyBtn.MouseButton1Click:Connect(function()
-	_G.ToggleFly()
-end)
+flyBtn.MouseButton1Click:Connect(_G.ToggleFly)
+noclipBtn.MouseButton1Click:Connect(_G.ToggleNoClip)
+speedBtn.MouseButton1Click:Connect(_G.ToggleSpeed)
+tpBtn.MouseButton1Click:Connect(_G.TPForward)
 
-noclipBtn.MouseButton1Click:Connect(function()
-	_G.ToggleNoClip()
-end)
-
-speedBtn.MouseButton1Click:Connect(function()
-	_G.ToggleSpeed()
-end)
-
-tpBtn.MouseButton1Click:Connect(function()
-	_G.TPForward()
-end)
-
--- MOVIMIENTO FLY (MANTENER PRESIONADO)
+-- MOVIMIENTO FLY (MANTENER)
 local function hold(btn, key)
 	btn.MouseButton1Down:Connect(function()
 		flyDir[key] = 1
