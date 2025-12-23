@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.4,0,0.5,0) -- tamaño inicial adaptable
+frame.Size = UDim2.new(0.4,0,0.5,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -139,7 +139,6 @@ showBtn.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0,8)
 showBtn.Visible = false
 
---// FUNCIONALIDAD BOTONES OCULTAR/MOSTRAR
 closeBtn.MouseButton1Click:Connect(function()
 	frame.Visible = false
 	showBtn.Visible = true
@@ -153,10 +152,10 @@ showBtn.MouseButton1Click:Connect(function()
 end)
 
 --// CREAR BOTONES OPCIONES
-local function makeButton(txt, y)
+local function makeButton(txt, posY)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.9,0,0,40)
-	b.Position = UDim2.new(0.05,0,0,y)
+	b.Position = UDim2.new(0.05,0,posY,0)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
@@ -166,20 +165,23 @@ local function makeButton(txt, y)
 	return b
 end
 
---// BOTONES
-local noclipBtn = makeButton("NoClip: OFF", 0.1)
+-- Posiciones proporcionales dentro del frame
+local btnSpacing = 0.1
+local startY = 0.1
+
+local noclipBtn = makeButton("NoClip: OFF", startY)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
 	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF", 0.22)
+local speedBtn = makeButton("Speed: OFF", startY + btnSpacing)
 speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
 	speedBtn.Text = "Speed: "..(speed and "ULTRA" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF", 0.34)
+local flyBtn = makeButton("Fly: OFF", startY + btnSpacing*2)
 flyBtn.MouseButton1Click:Connect(function()
 	if fly then
 		stopFly()
@@ -190,8 +192,8 @@ flyBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local tpBtn = makeButton("TP Forward", 0.46)
+local tpBtn = makeButton("TP Forward", startY + btnSpacing*3)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base", 0.58)
+local escBtn = makeButton("Escape Base", startY + btnSpacing*4)
 escBtn.MouseButton1Click:Connect(escapeBase)
