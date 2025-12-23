@@ -19,6 +19,7 @@ end)
 local noclip = false
 local speed = false
 local fly = false
+local highJump = false -- estado de salto alto
 
 local normalSpeed = 16
 local fastSpeed = 100 -- Súper rápido
@@ -83,6 +84,18 @@ local function escapeBase()
 		rootPart.CFrame = CFrame.new(0, 250, 0)
 	end
 end
+
+--// SALTO ALTO / INFINITO
+local jumpPowerNormal = humanoid.JumpPower
+local jumpMultiplier = 2 -- multiplicador de salto
+
+humanoid.StateChanged:Connect(function(oldState, newState)
+	if highJump and newState == Enum.HumanoidStateType.Jumping then
+		humanoid.JumpPower = humanoid.JumpPower * jumpMultiplier
+		wait(0.05)
+		humanoid.Jump = true
+	end
+end)
 
 ----------------------------------------------------------------
 --// GUI (MÓVIL FRIENDLY)
@@ -186,6 +199,16 @@ tpBtn.MouseButton1Click:Connect(tpForward)
 
 local escBtn = makeButton("Escape Base", 4)
 escBtn.MouseButton1Click:Connect(escapeBase)
+
+--// BOTÓN SALTO ALTO
+local jumpBtn = makeButton("Salto Alto: OFF", 5)
+jumpBtn.MouseButton1Click:Connect(function()
+	highJump = not highJump
+	if not highJump then
+		humanoid.JumpPower = jumpPowerNormal
+	end
+	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
+end)
 
 ----------------------------------------------------------------
 --// BORDE RAINBOW ANIMADO
