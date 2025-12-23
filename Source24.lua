@@ -22,7 +22,7 @@ local fly = false
 local menuVisible = true
 
 local normalSpeed = 16
-local fastSpeed = 120 -- SUPER RÁPIDO
+local fastSpeed = 120 -- ULTRA RÁPIDO
 local flySpeed = 35   -- VUELO SUAVE
 
 --// NOCLIP
@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.5,0,0.65,0) -- aumentado un poco más
+frame.Size = UDim2.new(0.55,0,0.7,0) -- aumentado un poco más
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -160,18 +160,18 @@ buttonContainer.BackgroundTransparency = 1
 -- Layout automático para botones
 local layout = Instance.new("UIListLayout", buttonContainer)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0,10) -- espacio entre botones
+layout.Padding = UDim.new(0,8) -- un poco más pequeño para que no se peguen
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Top
 
 --// CREAR BOTONES OPCIONES
 local function makeButton(txt)
 	local b = Instance.new("TextButton", buttonContainer)
-	b.Size = UDim2.new(0.85,0,0,40)
+	b.Size = UDim2.new(0.8,0,0,38) -- un poquito más pequeños
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
-	b.TextSize = 16
+	b.TextSize = 15
 	b.TextColor3 = Color3.new(1,1,1)
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
 	return b
