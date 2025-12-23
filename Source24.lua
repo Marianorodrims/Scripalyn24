@@ -2,7 +2,6 @@
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -24,49 +23,46 @@ local highJump = false
 local invisible = false
 
 local normalSpeed = 16
-local fastSpeed = 200 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local fastSpeed = 200
+local flySpeed = 25
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200 -- salto alto seguro
-local jumpCooldown = 0.05
+local jumpPowerBoost = 200
 
---// NOCLIP REAL MEJORADO
+----------------------------------------------------------------
+--// FUNCIONES (NO TOCADAS)
+----------------------------------------------------------------
+
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
-				v.CanTouch = false
 			end
 		end
 	end
 end)
 
---// SPEED
 local function updateSpeed()
-	if humanoid then
-		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
-	end
+	humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 end
 
---// FLY REAL (MÓVIL + PC)
 local bv, bg
 local function startFly()
 	if fly then return end
 	fly = true
-	bv = Instance.new("BodyVelocity")
-	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-	bv.Parent = rootPart
 
-	bg = Instance.new("BodyGyro")
+	bv = Instance.new("BodyVelocity", rootPart)
+	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+
+	bg = Instance.new("BodyGyro", rootPart)
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
-	bg.Parent = rootPart
 
 	RunService.RenderStepped:Connect(function()
-		if not fly then return end
-		local cam = workspace.CurrentCamera
-		bv.Velocity = cam.CFrame.LookVector * flySpeed
-		bg.CFrame = cam.CFrame
+		if fly then
+			local cam = workspace.CurrentCamera
+			bv.Velocity = cam.CFrame.LookVector * flySpeed
+			bg.CFrame = cam.CFrame
+		end
 	end)
 end
 
@@ -76,226 +72,125 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP FORWARD
-local function tpForward()
-	if rootPart then
-		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
-	end
-end
-
---// ESCAPE
-local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0, 250, 0)
-	end
-end
-
---// SALTO ALTO / INFINITO MEJORADO
-local lastJumpTime = 0
-RunService.Stepped:Connect(function()
-	if highJump and humanoid then
-		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
-			lastJumpTime = tick()
-			humanoid.JumpPower = jumpPowerBoost
-			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-		end
-	else
-		humanoid.JumpPower = jumpPowerNormal
-	end
-end)
-
---// INVISIBLE / TRANSPARENTE
 local function setInvisible(state)
-	if character then
-		for _, part in pairs(character:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("MeshPart") then
-				part.LocalTransparencyModifier = state and 1 or 0
-				part.CanCollide = not state
-			end
-			if part:IsA("Decal") then
-				part.Transparency = state and 1 or 0
-			end
+	for _,part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.LocalTransparencyModifier = state and 1 or 0
+			part.CanCollide = not state
 		end
 	end
 end
 
 ----------------------------------------------------------------
---// GUI (MÓVIL FRIENDLY)
+--// GUI PREMIUM (DISEÑO NUEVO)
 ----------------------------------------------------------------
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "BrainRotMenu"
-gui.Parent = game:GetService("CoreGui")
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "AlyControlHub"
 gui.ResetOnSpawn = false
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.55,0,0.6,0)
-frame.Position = UDim2.new(0.225,0,0.2,0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+-- MAIN FRAME
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 560, 0, 380)
+main.Position = UDim2.new(0.5, -280, 0.5, -190)
+main.BackgroundColor3 = Color3.fromRGB(15,18,25)
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,40)
-title.BackgroundColor3 = Color3.fromRGB(35,35,50)
-title.Text = "AlyControl-Hub👩‍💻"
+-- HEADER
+local header = Instance.new("Frame", main)
+header.Size = UDim2.new(1,0,0,45)
+header.BackgroundColor3 = Color3.fromRGB(20,25,35)
+Instance.new("UICorner", header).CornerRadius = UDim.new(0,14)
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(1,-50,1,0)
+title.Position = UDim2.new(0,15,0,0)
+title.BackgroundTransparency = 1
+title.Text = "AlyControl Hub"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
-title.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
+title.TextColor3 = Color3.fromRGB(120,200,255)
+title.TextXAlignment = Left
 
---// CERRAR/ABRIR
-local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0,30,0,30)
-closeBtn.Position = UDim2.new(1,-35,0,5)
-closeBtn.Text = "X"
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18
-closeBtn.TextColor3 = Color3.new(1,0,0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
+local close = Instance.new("TextButton", header)
+close.Size = UDim2.new(0,30,0,30)
+close.Position = UDim2.new(1,-35,0,7)
+close.Text = "X"
+close.Font = Enum.Font.GothamBold
+close.TextColor3 = Color3.fromRGB(255,80,80)
+close.BackgroundColor3 = Color3.fromRGB(30,35,45)
+Instance.new("UICorner", close).CornerRadius = UDim.new(0,8)
 
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0,150,0,35)
-toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
-toggleBtn.Text = "AlyControl-Hub"
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 16
-toggleBtn.TextColor3 = Color3.new(1,1,1)
-toggleBtn.BackgroundTransparency = 0.4
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-toggleBtn.Visible = false
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
-
---// BORDE RAINBOW ANIMADO DEL TOGGLE
-local toggleStroke = Instance.new("UIStroke", toggleBtn)
-toggleStroke.Thickness = 2
-
-spawn(function()
-	local hue = 0
-	while true do
-		hue = (hue + 1) % 360
-		toggleStroke.Color = Color3.fromHSV(hue/360,1,1)
-		wait(0.04)
-	end
+close.MouseButton1Click:Connect(function()
+	main.Visible = false
 end)
 
-closeBtn.MouseButton1Click:Connect(function()
-	frame.Visible = false
-	toggleBtn.Visible = true
-end)
+-- SIDEBAR
+local sidebar = Instance.new("Frame", main)
+sidebar.Size = UDim2.new(0,130,1,-45)
+sidebar.Position = UDim2.new(0,0,0,45)
+sidebar.BackgroundColor3 = Color3.fromRGB(18,22,30)
 
-toggleBtn.MouseButton1Click:Connect(function()
-	frame.Visible = true
-	toggleBtn.Visible = false
-end)
+-- CONTENT
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1,-140,1,-55)
+content.Position = UDim2.new(0,140,0,55)
+content.BackgroundTransparency = 1
 
---// BOTÓN CREATOR
-local function makeButton(txt, y)
-	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.42,0,0,40)
-	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
-	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
-	b.Text = txt
-	b.Font = Enum.Font.Gotham
-	b.TextSize = 16
-	b.TextColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
-	return b
+-- CARD CREATOR
+local function createToggle(text, y, callback)
+	local card = Instance.new("Frame", content)
+	card.Size = UDim2.new(1,0,0,55)
+	card.Position = UDim2.new(0,0,0,y)
+	card.BackgroundColor3 = Color3.fromRGB(22,26,36)
+	Instance.new("UICorner", card).CornerRadius = UDim.new(0,10)
+
+	local label = Instance.new("TextLabel", card)
+	label.Size = UDim2.new(0.7,0,1,0)
+	label.Position = UDim2.new(0,15,0,0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 15
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextXAlignment = Left
+
+	local toggle = Instance.new("TextButton", card)
+	toggle.Size = UDim2.new(0,55,0,25)
+	toggle.Position = UDim2.new(1,-70,0.5,-12)
+	toggle.Text = ""
+	toggle.BackgroundColor3 = Color3.fromRGB(60,60,70)
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(1,0)
+
+	local dot = Instance.new("Frame", toggle)
+	dot.Size = UDim2.new(0,21,0,21)
+	dot.Position = UDim2.new(0,2,0.5,-10)
+	dot.BackgroundColor3 = Color3.new(1,1,1)
+	Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
+
+	local state = false
+	toggle.MouseButton1Click:Connect(function()
+		state = not state
+		dot.Position = state and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,2,0.5,-10)
+		toggle.BackgroundColor3 = state and Color3.fromRGB(60,170,255) or Color3.fromRGB(60,60,70)
+		callback(state)
+	end)
 end
 
---// BOTONES
-local noclipBtn = makeButton("NoClip: OFF", 0)
-noclipBtn.MouseButton1Click:Connect(function()
-	noclip = not noclip
-	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
-end)
-
-local speedBtn = makeButton("Speed: OFF", 1)
-speedBtn.MouseButton1Click:Connect(function()
-	speed = not speed
-	updateSpeed()
-	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
-end)
-
-local flyBtn = makeButton("Fly: OFF", 2)
-flyBtn.MouseButton1Click:Connect(function()
-	if fly then
-		stopFly()
-		flyBtn.Text = "Fly: OFF"
-	else
-		startFly()
-		flyBtn.Text = "Fly: ON"
-	end
-end)
-
-local tpBtn = makeButton("TP Forward", 3)
-tpBtn.MouseButton1Click:Connect(tpForward)
-
-local escBtn = makeButton("Escape Base", 4)
-escBtn.MouseButton1Click:Connect(escapeBase)
-
-local jumpBtn = makeButton("Salto Alto: OFF", 5)
-jumpBtn.MouseButton1Click:Connect(function()
-	highJump = not highJump
-	if not highJump then
-		humanoid.JumpPower = jumpPowerNormal
-	end
-	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
-end)
-
-local invisBtn = makeButton("Invisible: OFF", 6)
-invisBtn.Position = UDim2.new(0.53,0,1,-30)
-invisBtn.MouseButton1Click:Connect(function()
-	invisible = not invisible
-	setInvisible(invisible)
-	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
-end)
-
---// FPS DISPLAY
-local fpsLabel = Instance.new("TextLabel", frame)
-fpsLabel.Size = UDim2.new(0.4,0,0,25)
-fpsLabel.Position = UDim2.new(0.05,0,1,-30)
-fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
-fpsLabel.TextColor3 = Color3.new(1,1,1)
-fpsLabel.Font = Enum.Font.Gotham
-fpsLabel.TextSize = 14
-fpsLabel.Text = "FPS: 0"
-Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
-
-local lastTime = tick()
-local frameCount = 0
-RunService.RenderStepped:Connect(function()
-	frameCount = frameCount + 1
-	local now = tick()
-	if now - lastTime >= 1 then
-		fpsLabel.Text = "FPS: "..frameCount
-		frameCount = 0
-		lastTime = now
-	end
-end)
-
 ----------------------------------------------------------------
---// BORDE RAINBOW ANIMADO
+--// OPCIONES (MISMAS FUNCIONES)
 ----------------------------------------------------------------
-local border = Instance.new("Frame", frame)
-border.Size = UDim2.new(1, 4, 1, 4)
-border.Position = UDim2.new(0, -2, 0, -2)
-border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-border.ZIndex = 0
 
-local uiStroke = Instance.new("UIStroke", border)
-uiStroke.Thickness = 4
-uiStroke.Color = Color3.fromRGB(255,0,0)
-uiStroke.Transparency = 0
-
-spawn(function()
-	local hue = 0
-	while true do
-		hue = (hue + 1) % 360
-		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
-		wait(0.03)
-	end
+createToggle("NoClip", 0, function(v) noclip = v end)
+createToggle("Speed Boost", 65, function(v) speed = v updateSpeed() end)
+createToggle("Fly", 130, function(v) if v then startFly() else stopFly() end end)
+createToggle("Salto Infinito", 195, function(v)
+	highJump = v
+	humanoid.JumpPower = v and jumpPowerBoost or jumpPowerNormal
+end)
+createToggle("Invisible", 260, function(v)
+	invisible = v
+	setInvisible(v)
 end)
