@@ -22,7 +22,7 @@ local fly = false
 local menuVisible = true
 
 local normalSpeed = 16
-local fastSpeed = 120 -- SPEED ULTRA
+local fastSpeed = 120 -- SUPER RAPIDO
 local flySpeed = 35   -- VUELO SUAVE
 
 --// NOCLIP
@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.35,0,0.45,0) -- tamaño más pequeño
+frame.Size = UDim2.new(0.35,0,0.5,0) -- tamaño reducido
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -151,37 +151,45 @@ showBtn.MouseButton1Click:Connect(function()
 	menuVisible = true
 end)
 
---// CREAR BOTONES OPCIONES (ahora más pequeños y con espacio)
-local function makeButton(txt, posY)
-	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.9,0,0,35) -- más pequeños
-	b.Position = UDim2.new(0.05,0,posY,0)
+--// CONTAINER PARA BOTONES
+local buttonContainer = Instance.new("Frame", frame)
+buttonContainer.Size = UDim2.new(1,0,1, -50) -- espacio debajo del título
+buttonContainer.Position = UDim2.new(0,0,0,35)
+buttonContainer.BackgroundTransparency = 1
+
+-- Layout automático para botones
+local layout = Instance.new("UIListLayout", buttonContainer)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0,10) -- espacio entre botones
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+--// CREAR BOTONES OPCIONES
+local function makeButton(txt)
+	local b = Instance.new("TextButton", buttonContainer)
+	b.Size = UDim2.new(0.9,0,0,40)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
-	b.TextSize = 15
+	b.TextSize = 16
 	b.TextColor3 = Color3.new(1,1,1)
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
 	return b
 end
 
--- Posiciones proporcionales dentro del frame
-local btnSpacing = 0.09
-local startY = 0.12
-
-local noclipBtn = makeButton("NoClip: OFF", startY)
+local noclipBtn = makeButton("NoClip: OFF")
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
 	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF", startY + btnSpacing)
+local speedBtn = makeButton("Speed: OFF")
 speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
 	speedBtn.Text = "Speed: "..(speed and "ULTRA" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF", startY + btnSpacing*2)
+local flyBtn = makeButton("Fly: OFF")
 flyBtn.MouseButton1Click:Connect(function()
 	if fly then
 		stopFly()
@@ -192,8 +200,8 @@ flyBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local tpBtn = makeButton("TP Forward", startY + btnSpacing*3)
+local tpBtn = makeButton("TP Forward")
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base", startY + btnSpacing*4)
+local escBtn = makeButton("Escape Base")
 escBtn.MouseButton1Click:Connect(escapeBase)
