@@ -1,8 +1,6 @@
 --// SERVICIOS
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -17,22 +15,17 @@ player.CharacterAdded:Connect(function(char)
 end)
 
 --// ESTADOS
-local noclip = false
-local speed = false
-local fly = false
-local highJump = false
-local invisible = false
-
-local normalSpeed = 16
-local fastSpeed = 200
-local flySpeed = 25
+local noclip, speed, fly, highJump, invisible = false,false,false,false,false
+local normalSpeed, fastSpeed, flySpeed = 16,200,25
 local jumpPowerNormal = humanoid.JumpPower
 local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
---// NOCLIP
+----------------------------------------------------------------
+--// FUNCIONES
+----------------------------------------------------------------
 RunService.Stepped:Connect(function()
-	if noclip and character then
+	if noclip then
 		for _,v in pairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
@@ -42,21 +35,17 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// SPEED
 local function updateSpeed()
 	humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 end
 
---// FLY
-local bv, bg
+local bv,bg
 local function startFly()
 	if fly then return end
 	fly = true
-
-	bv = Instance.new("BodyVelocity", rootPart)
+	bv = Instance.new("BodyVelocity",rootPart)
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-
-	bg = Instance.new("BodyGyro", rootPart)
+	bg = Instance.new("BodyGyro",rootPart)
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 
 	RunService.RenderStepped:Connect(function()
@@ -74,21 +63,18 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP
 local function tpForward()
 	rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
 end
 
---// ESCAPE
 local function escapeBase()
 	rootPart.CFrame = CFrame.new(0,250,0)
 end
 
---// SALTO
-local lastJumpTime = 0
+local lastJump = 0
 RunService.Stepped:Connect(function()
-	if highJump and humanoid and humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
-		lastJumpTime = tick()
+	if highJump and humanoid.Jump and tick()-lastJump>jumpCooldown then
+		lastJump = tick()
 		humanoid.JumpPower = jumpPowerBoost
 		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 	else
@@ -96,7 +82,6 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// INVISIBLE
 local function setInvisible(state)
 	for _,p in pairs(character:GetDescendants()) do
 		if p:IsA("BasePart") then
@@ -109,99 +94,110 @@ end
 ----------------------------------------------------------------
 --// GUI
 ----------------------------------------------------------------
-
-local gui = Instance.new("ScreenGui", game.CoreGui)
+local gui = Instance.new("ScreenGui",game.CoreGui)
 gui.ResetOnSpawn = false
 
-local frame = Instance.new("Frame", gui)
+local frame = Instance.new("Frame",gui)
 frame.Size = UDim2.new(0.55,0,0.6,0)
 frame.Position = UDim2.new(0.225,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+frame.ZIndex = 2
+Instance.new("UICorner",frame).CornerRadius = UDim.new(0,14)
 
 ----------------------------------------------------------------
---// MATRIX BACKGROUND (NO TOCA BOTONES)
+--// MATRIX BACKGROUND (ATRÁS)
 ----------------------------------------------------------------
-local matrixHolder = Instance.new("Frame", frame)
-matrixHolder.Size = UDim2.new(1,0,1,0)
-matrixHolder.BackgroundTransparency = 1
-matrixHolder.ZIndex = 0
-
-for i = 1,18 do
-	local txt = Instance.new("TextLabel", matrixHolder)
-	txt.Size = UDim2.new(0,20,1,0)
-	txt.Position = UDim2.new((i-1)/18,0,0,0)
-	txt.Text = "01\n01\n01\n01\n01\n01\n01\n01"
-	txt.TextColor3 = Color3.fromRGB(0,255,70)
-	txt.TextTransparency = 0.85
-	txt.Font = Enum.Font.Code
-	txt.TextSize = 14
-	txt.BackgroundTransparency = 1
-	txt.ZIndex = 0
-
-	spawn(function()
-		while true do
-			txt.Position = UDim2.new(txt.Position.X.Scale,0,-1,0)
-			for y= -1,1,0.02 do
-				txt.Position = UDim2.new(txt.Position.X.Scale,0,y,0)
-				wait(0.05)
-			end
-		end
-	end)
-end
+local matrix = Instance.new("TextLabel",frame)
+matrix.Size = UDim2.new(1,0,1,0)
+matrix.Position = UDim2.new(0,0,0,0)
+matrix.Text = string.rep("01\n",120)
+matrix.Font = Enum.Font.Code
+matrix.TextSize = 14
+matrix.TextColor3 = Color3.fromRGB(0,255,70)
+matrix.TextTransparency = 0.85
+matrix.BackgroundTransparency = 1
+matrix.ZIndex = 0
 
 ----------------------------------------------------------------
 --// TITULO
 ----------------------------------------------------------------
-local title = Instance.new("TextLabel", frame)
+local title = Instance.new("TextLabel",frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
 title.Text = "BrainRot Stealer Pro"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
-title.ZIndex = 2
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
+title.ZIndex = 3
+Instance.new("UICorner",title).CornerRadius = UDim.new(0,14)
 
 ----------------------------------------------------------------
---// BOTÓN ABRIR MENU (IGUAL + RAINBOW)
+--// BOTÓN CREATOR
 ----------------------------------------------------------------
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0,150,0,35)
-toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
-toggleBtn.Text = "Abrir Menu"
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 16
-toggleBtn.TextColor3 = Color3.new(1,1,1)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
-toggleBtn.Visible = false
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,8)
+local function makeButton(text,y)
+	local b = Instance.new("TextButton",frame)
+	b.Size = UDim2.new(0.42,0,0,40)
+	b.Position = UDim2.new(0.05+(y%2)*0.48,0,0,40+math.floor(y/2)*50)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
+	b.Text = text
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 16
+	b.TextColor3 = Color3.new(1,1,1)
+	b.ZIndex = 3
+	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
+	return b
+end
 
-local toggleStroke = Instance.new("UIStroke", toggleBtn)
-toggleStroke.Thickness = 2
+local noclipBtn = makeButton("NoClip: OFF",0)
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
+end)
 
-spawn(function()
-	local h = 0
-	while true do
-		h = (h + 1) % 360
-		toggleStroke.Color = Color3.fromHSV(h/360,1,1)
-		wait(0.03)
-	end
+local speedBtn = makeButton("Speed: OFF",1)
+speedBtn.MouseButton1Click:Connect(function()
+	speed = not speed
+	updateSpeed()
+	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
+end)
+
+local flyBtn = makeButton("Fly: OFF",2)
+flyBtn.MouseButton1Click:Connect(function()
+	if fly then stopFly() flyBtn.Text="Fly: OFF" else startFly() flyBtn.Text="Fly: ON" end
+end)
+
+local tpBtn = makeButton("TP Forward",3)
+tpBtn.MouseButton1Click:Connect(tpForward)
+
+local escBtn = makeButton("Escape Base",4)
+escBtn.MouseButton1Click:Connect(escapeBase)
+
+local jumpBtn = makeButton("Salto Alto: OFF",5)
+jumpBtn.MouseButton1Click:Connect(function()
+	highJump = not highJump
+	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
+end)
+
+local invisBtn = makeButton("Invisible: OFF",6)
+invisBtn.MouseButton1Click:Connect(function()
+	invisible = not invisible
+	setInvisible(invisible)
+	invisBtn.Text = "Invisible: "..(invisible and "ON" or "OFF")
 end)
 
 ----------------------------------------------------------------
---// BORDE RAINBOW MENU (ORIGINAL)
+--// BORDE RAINBOW
 ----------------------------------------------------------------
-local uiStroke = Instance.new("UIStroke", frame)
-uiStroke.Thickness = 4
+local stroke = Instance.new("UIStroke",frame)
+stroke.Thickness = 4
 
 spawn(function()
-	local h = 0
+	local h=0
 	while true do
-		h = (h + 1) % 360
-		uiStroke.Color = Color3.fromHSV(h/360,1,1)
+		h=(h+1)%360
+		stroke.Color = Color3.fromHSV(h/360,1,1)
 		wait(0.03)
 	end
 end)
