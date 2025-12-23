@@ -1,6 +1,5 @@
 --// SERVICIOS
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 --// PLAYER
@@ -20,11 +19,15 @@ local noclip = false
 local speed = false
 local fly = false
 
+--// VALORES
 local normalSpeed = 16
-local fastSpeed = 60
+local fastSpeed = 120 -- 🔥 MÁS RÁPIDO
+local speedBoost = 90 -- empuje extra
 local flySpeed = 70
 
---// NOCLIP REAL
+----------------------------------------------------------------
+--// NOCLIP
+----------------------------------------------------------------
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -35,26 +38,38 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// SPEED
-local function updateSpeed()
-	if humanoid then
-		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
+----------------------------------------------------------------
+--// SPEED ULTRA (REAL)
+----------------------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	if speed and rootPart then
+		humanoid.WalkSpeed = fastSpeed
+		local moveDir = humanoid.MoveDirection
+		if moveDir.Magnitude > 0 then
+			rootPart.Velocity = Vector3.new(
+				moveDir.X * speedBoost,
+				rootPart.Velocity.Y,
+				moveDir.Z * speedBoost
+			)
+		end
+	else
+		humanoid.WalkSpeed = normalSpeed
 	end
-end
+end)
 
---// FLY REAL (MÓVIL + PC)
+----------------------------------------------------------------
+--// FLY
+----------------------------------------------------------------
 local bv, bg
 local function startFly()
 	if fly then return end
 	fly = true
 
-	bv = Instance.new("BodyVelocity")
+	bv = Instance.new("BodyVelocity", rootPart)
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-	bv.Parent = rootPart
 
-	bg = Instance.new("BodyGyro")
+	bg = Instance.new("BodyGyro", rootPart)
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
-	bg.Parent = rootPart
 
 	RunService.RenderStepped:Connect(function()
 		if not fly then return end
@@ -70,27 +85,21 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP FORWARD
+----------------------------------------------------------------
+--// TP + ESCAPE
+----------------------------------------------------------------
 local function tpForward()
-	if rootPart then
-		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
-	end
+	rootPart.CFrame += rootPart.CFrame.LookVector * 12
 end
 
---// ESCAPE
 local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0, 250, 0)
-	end
+	rootPart.CFrame = CFrame.new(0, 250, 0)
 end
 
 ----------------------------------------------------------------
---// GUI (MÓVIL FRIENDLY)
+--// GUI
 ----------------------------------------------------------------
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "BrainRotMenu"
-gui.Parent = game:GetService("CoreGui")
+local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
@@ -99,9 +108,9 @@ frame.Position = UDim2.new(0.075,0,0.22,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
+--// TITULO
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
@@ -111,8 +120,17 @@ title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
---// BOTÓN CREATOR
-local function makeButton(txt, y)
+--// LOGO (ESQUINA IZQUIERDA)
+local logo = Instance.new("ImageLabel", title)
+logo.Size = UDim2.new(0,28,0,28)
+logo.Position = UDim2.new(0,6,0.5,-14)
+logo.BackgroundTransparency = 1
+logo.Image = "https://images-platform.99static.com//UUYpXRPoW4zZsS-8aKdYShUzQNk=/0x0:1812x1812/fit-in/590x590/99designs-contests-attachments/132/132674/attachment_132674120"
+
+----------------------------------------------------------------
+--// BOTONES
+----------------------------------------------------------------
+local function btn(txt,y)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.9,0,0,45)
 	b.Position = UDim2.new(0.05,0,0,y)
@@ -125,33 +143,22 @@ local function makeButton(txt, y)
 	return b
 end
 
---// BOTONES
-local noclipBtn = makeButton("NoClip: OFF", 55)
-noclipBtn.MouseButton1Click:Connect(function()
+local b1 = btn("NoClip: OFF",55)
+b1.MouseButton1Click:Connect(function()
 	noclip = not noclip
-	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
+	b1.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF", 110)
-speedBtn.MouseButton1Click:Connect(function()
+local b2 = btn("Speed: OFF",110)
+b2.MouseButton1Click:Connect(function()
 	speed = not speed
-	updateSpeed()
-	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
+	b2.Text = "Speed: "..(speed and "ULTRA" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF", 165)
-flyBtn.MouseButton1Click:Connect(function()
-	if fly then
-		stopFly()
-		flyBtn.Text = "Fly: OFF"
-	else
-		startFly()
-		flyBtn.Text = "Fly: ON"
-	end
+local b3 = btn("Fly: OFF",165)
+b3.MouseButton1Click:Connect(function()
+	if fly then stopFly() b3.Text="Fly: OFF" else startFly() b3.Text="Fly: ON" end
 end)
 
-local tpBtn = makeButton("TP Forward", 220)
-tpBtn.MouseButton1Click:Connect(tpForward)
-
-local escBtn = makeButton("Escape Base", 275)
-escBtn.MouseButton1Click:Connect(escapeBase)
+btn("TP Forward",220).MouseButton1Click:Connect(tpForward)
+btn("Escape Base",275).MouseButton1Click:Connect(escapeBase)
