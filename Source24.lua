@@ -22,7 +22,7 @@ local fly = false
 local menuVisible = true
 
 local normalSpeed = 16
-local fastSpeed = 120 -- SUPER RAPIDO
+local fastSpeed = 120 -- SUPER RÁPIDO
 local flySpeed = 35   -- VUELO SUAVE
 
 --// NOCLIP
@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.35,0,0.5,0) -- tamaño reducido
+frame.Size = UDim2.new(0.45,0,0.6,0) -- aumentado un poco
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -167,7 +167,7 @@ layout.VerticalAlignment = Enum.VerticalAlignment.Top
 --// CREAR BOTONES OPCIONES
 local function makeButton(txt)
 	local b = Instance.new("TextButton", buttonContainer)
-	b.Size = UDim2.new(0.9,0,0,40)
+	b.Size = UDim2.new(0.85,0,0,40)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
