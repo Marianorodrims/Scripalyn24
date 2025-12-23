@@ -48,7 +48,7 @@ local bv, bg
 local flyDir = {f=0,b=0,l=0,r=0,u=0,d=0}
 
 local function startFly()
-	if fly or not rootPart then return end
+	if fly then return end
 	fly = true
 
 	bv = Instance.new("BodyVelocity")
@@ -60,6 +60,22 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.CFrame = rootPart.CFrame
 	bg.Parent = rootPart
+
+	RunService.RenderStepped:Connect(function()
+		if not fly then return end
+		local cam = workspace.CurrentCamera
+		local dir = Vector3.zero
+
+		if flyDir.f == 1 then dir += cam.CFrame.LookVector end
+		if flyDir.b == 1 then dir -= cam.CFrame.LookVector end
+		if flyDir.l == 1 then dir -= cam.CFrame.RightVector end
+		if flyDir.r == 1 then dir += cam.CFrame.RightVector end
+		if flyDir.u == 1 then dir += Vector3.new(0,1,0) end
+		if flyDir.d == 1 then dir -= Vector3.new(0,1,0) end
+
+		bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+		bg.CFrame = cam.CFrame
+	end)
 end
 
 local function stopFly()
@@ -68,25 +84,7 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
--- Movimiento Fly (PC + MÓVIL)
-RunService.RenderStepped:Connect(function()
-	if not fly or not rootPart then return end
-
-	local cam = workspace.CurrentCamera
-	local dir = Vector3.zero
-
-	if flyDir.f == 1 then dir += cam.CFrame.LookVector end
-	if flyDir.b == 1 then dir -= cam.CFrame.LookVector end
-	if flyDir.l == 1 then dir -= cam.CFrame.RightVector end
-	if flyDir.r == 1 then dir += cam.CFrame.RightVector end
-	if flyDir.u == 1 then dir += Vector3.new(0,1,0) end
-	if flyDir.d == 1 then dir -= Vector3.new(0,1,0) end
-
-	bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
-	bg.CFrame = cam.CFrame
-end)
-
---// CONTROLES FLY PC
+--// CONTROLES FLY
 UIS.InputBegan:Connect(function(i,g)
 	if g then return end
 	if i.KeyCode == Enum.KeyCode.W then flyDir.f=1 end
@@ -106,32 +104,6 @@ UIS.InputEnded:Connect(function(i)
 	if i.KeyCode == Enum.KeyCode.LeftControl then flyDir.d=0 end
 end)
 
---====================================================
--- SOPORTE MÓVIL (SIN TOCAR TU DISEÑO)
---====================================================
-if UIS.TouchEnabled then
-	print("📱 Fly móvil activo")
-
-	-- En móvil: avanzar automático al volar
-	RunService.RenderStepped:Connect(function()
-		if fly then
-			flyDir.f = 1
-		else
-			flyDir.f = 0
-		end
-	end)
-
-	-- Tocar pantalla = subir
-	UIS.TouchStarted:Connect(function()
-		flyDir.u = 1
-	end)
-
-	-- Soltar = dejar de subir
-	UIS.TouchEnded:Connect(function()
-		flyDir.u = 0
-	end)
-end
-
 --// TP FORWARD
 local function tpForward()
 	if rootPart then
@@ -139,7 +111,7 @@ local function tpForward()
 	end
 end
 
---// TOGGLES (USADOS POR TU GUI)
+--// EJEMPLOS DE TOGGLES (para botones)
 _G.ToggleNoClip = function()
 	noclip = not noclip
 end
