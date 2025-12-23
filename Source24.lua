@@ -79,19 +79,15 @@ end
 
 --// TP
 local function tpForward()
-	if rootPart then
-		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
-	end
+	rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
 end
 
 --// ESCAPE
 local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0,250,0)
-	end
+	rootPart.CFrame = CFrame.new(0,250,0)
 end
 
---// SALTO
+--// SALTO INFINITO
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -107,15 +103,13 @@ end)
 
 --// INVISIBLE
 local function setInvisible(state)
-	if character then
-		for _,part in pairs(character:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("MeshPart") then
-				part.LocalTransparencyModifier = state and 1 or 0
-				part.CanCollide = not state
-			end
-			if part:IsA("Decal") then
-				part.Transparency = state and 1 or 0
-			end
+	for _,part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") or part:IsA("MeshPart") then
+			part.LocalTransparencyModifier = state and 1 or 0
+			part.CanCollide = not state
+		end
+		if part:IsA("Decal") then
+			part.Transparency = state and 1 or 0
 		end
 	end
 end
@@ -123,9 +117,8 @@ end
 ----------------------------------------------------------------
 --// GUI
 ----------------------------------------------------------------
-local gui = Instance.new("ScreenGui")
+local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 gui.Name = "AlyControlHub"
-gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
@@ -156,7 +149,7 @@ closeBtn.TextColor3 = Color3.new(1,0,0)
 closeBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
 
---// TOGGLE BUTTON
+--// TOGGLE MENU
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0,150,0,35)
 toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
@@ -169,10 +162,8 @@ toggleBtn.Visible = false
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,8)
 
 --// RAINBOW BORDE BOTÓN
-local toggleStroke = Instance.new("UIStroke")
-toggleStroke.Parent = toggleBtn
+local toggleStroke = Instance.new("UIStroke", toggleBtn)
 toggleStroke.Thickness = 3
-toggleStroke.Transparency = 0
 
 spawn(function()
 	local hue = 0
@@ -195,7 +186,7 @@ toggleBtn.MouseButton1Click:Connect(function()
 	toggleBtn.Visible = false
 end)
 
---// CREAR BOTÓN
+--// CREAR BOTONES
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.42,0,0,40)
@@ -209,38 +200,53 @@ local function makeButton(txt, y)
 	return b
 end
 
---// BOTONES
-local noclipBtn = makeButton("NoClip: OFF",0)
-noclipBtn.MouseButton1Click:Connect(function()
+makeButton("NoClip: OFF",0).MouseButton1Click:Connect(function()
 	noclip = not noclip
-	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF",1)
-speedBtn.MouseButton1Click:Connect(function()
+makeButton("Speed: OFF",1).MouseButton1Click:Connect(function()
 	speed = not speed
 	updateSpeed()
-	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF",2)
-flyBtn.MouseButton1Click:Connect(function()
-	if fly then stopFly() flyBtn.Text="Fly: OFF"
-	else startFly() flyBtn.Text="Fly: ON" end
+makeButton("Fly: OFF",2).MouseButton1Click:Connect(function()
+	if fly then stopFly() else startFly() end
 end)
 
 makeButton("TP Forward",3).MouseButton1Click:Connect(tpForward)
 makeButton("Escape Base",4).MouseButton1Click:Connect(escapeBase)
 
-local jumpBtn = makeButton("Salto Alto: OFF",5)
-jumpBtn.MouseButton1Click:Connect(function()
+makeButton("Salto Alto",5).MouseButton1Click:Connect(function()
 	highJump = not highJump
-	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
 end)
 
-----------------------------------------------------------------
---// BORDE RAINBOW VENTANA
-----------------------------------------------------------------
+local invisBtn = makeButton("Invisible",6)
+invisBtn.MouseButton1Click:Connect(function()
+	invisible = not invisible
+	setInvisible(invisible)
+end)
+
+--// FPS
+local fpsLabel = Instance.new("TextLabel", frame)
+fpsLabel.Size = UDim2.new(0.4,0,0,25)
+fpsLabel.Position = UDim2.new(0.05,0,1,-30)
+fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
+fpsLabel.TextColor3 = Color3.new(1,1,1)
+fpsLabel.Font = Enum.Font.Gotham
+fpsLabel.TextSize = 14
+Instance.new("UICorner", fpsLabel)
+
+local frames, last = 0, tick()
+RunService.RenderStepped:Connect(function()
+	frames += 1
+	if tick() - last >= 1 then
+		fpsLabel.Text = "FPS: "..frames
+		frames = 0
+		last = tick()
+	end
+end)
+
+--// RAINBOW BORDE VENTANA
 local border = Instance.new("Frame", frame)
 border.Size = UDim2.new(1,4,1,4)
 border.Position = UDim2.new(0,-2,0,-2)
