@@ -19,13 +19,14 @@ end)
 local noclip = false
 local speed = false
 local fly = false
-local highJump = false -- estado de salto alto
+local highJump = false
+local invisible = false -- estado de invisibilidad
 
-local normalSpeed = 16
-local fastSpeed = 150 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local normalSpeed = 80
+local fastSpeed = 200
+local flySpeed = 25
 local jumpPowerNormal = humanoid.JumpPower
-local jumpMultiplier = 10 -- Multiplicador de salto alto extremo
+local jumpMultiplier = 8
 
 --// NOCLIP REAL
 RunService.Stepped:Connect(function()
@@ -98,12 +99,26 @@ RunService.Stepped:Connect(function()
 			lastJumpTime = tick()
 			humanoid.JumpPower = jumpPowerCurrent
 			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-			jumpPowerCurrent = jumpPowerCurrent * 1.2 -- cada salto en el aire sube más
+			jumpPowerCurrent = jumpPowerCurrent * 1.2
 		end
 	else
 		jumpPowerCurrent = jumpPowerNormal
 	end
 end)
+
+--// INVISIBLE / TRANSPARENTE
+local function setInvisible(state)
+	if character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") or part:IsA("MeshPart") then
+				part.LocalTransparencyModifier = state and 1 or 0
+			end
+			if part:IsA("Decal") then
+				part.Transparency = state and 1 or 0
+			end
+		end
+	end
+end
 
 ----------------------------------------------------------------
 --// GUI (MÓVIL FRIENDLY)
@@ -115,7 +130,7 @@ gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.55,0,0.6,0) -- un poco más grande para los botones
+frame.Size = UDim2.new(0.55,0,0.6,0)
 frame.Position = UDim2.new(0.225,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
@@ -166,8 +181,8 @@ end)
 --// BOTÓN CREATOR
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.42,0,0,40) -- más pequeño para que quepan bien
-	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50) -- distribución en 2 columnas
+	b.Size = UDim2.new(0.42,0,0,40)
+	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
@@ -217,10 +232,17 @@ jumpBtn.MouseButton1Click:Connect(function()
 	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
+local invisBtn = makeButton("Invisible: OFF", 6)
+invisBtn.MouseButton1Click:Connect(function()
+	invisible = not invisible
+	setInvisible(invisible)
+	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
+end)
+
 --// FPS DISPLAY
 local fpsLabel = Instance.new("TextLabel", frame)
 fpsLabel.Size = UDim2.new(0.4,0,0,25)
-fpsLabel.Position = UDim2.new(0.05,0,1,-30) -- abajo izquierda
+fpsLabel.Position = UDim2.new(0.05,0,1,-30)
 fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
 fpsLabel.TextColor3 = Color3.new(1,1,1)
 fpsLabel.Font = Enum.Font.Gotham
@@ -238,29 +260,5 @@ RunService.RenderStepped:Connect(function()
 		fpsLabel.Text = "FPS: "..frameCount
 		frameCount = 0
 		lastTime = now
-	end
-end)
-
-----------------------------------------------------------------
---// BORDE RAINBOW ANIMADO
-----------------------------------------------------------------
-local border = Instance.new("Frame", frame)
-border.Size = UDim2.new(1, 4, 1, 4)
-border.Position = UDim2.new(0, -2, 0, -2)
-border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-border.ZIndex = 0
-
-local uiStroke = Instance.new("UIStroke", border)
-uiStroke.Thickness = 4
-uiStroke.Color = Color3.fromRGB(255,0,0)
-uiStroke.Transparency = 0
-
-spawn(function()
-	local hue = 0
-	while true do
-		hue = (hue + 1) % 360
-		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
-		wait(0.03)
 	end
 end)
