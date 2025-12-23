@@ -100,7 +100,7 @@ gui.ResetOnSpawn = false
 local frame = Instance.new("Frame", gui)
 frame.AnchorPoint = Vector2.new(0.5,0.5)
 frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.4,0,0.5,0)
+frame.Size = UDim2.new(0.35,0,0.45,0) -- tamaño más pequeño
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
@@ -108,7 +108,7 @@ Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
 
 --// TITULO
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,40)
+title.Size = UDim2.new(1,0,0,35)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
 title.Text = "BrainRot Stealer Pro"
 title.Font = Enum.Font.GothamBold
@@ -118,12 +118,12 @@ Instance.new("UICorner", title).CornerRadius = UDim.new(0,12)
 
 --// BOTON CERRAR
 local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0,30,0,30)
-closeBtn.Position = UDim2.new(1,-35,0,5)
+closeBtn.Size = UDim2.new(0,28,0,28)
+closeBtn.Position = UDim2.new(1,-33,0,4)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
 closeBtn.Text = "X"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18
+closeBtn.TextSize = 16
 closeBtn.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,6)
 
@@ -151,23 +151,23 @@ showBtn.MouseButton1Click:Connect(function()
 	menuVisible = true
 end)
 
---// CREAR BOTONES OPCIONES
+--// CREAR BOTONES OPCIONES (ahora más pequeños y con espacio)
 local function makeButton(txt, posY)
 	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.9,0,0,40)
+	b.Size = UDim2.new(0.9,0,0,35) -- más pequeños
 	b.Position = UDim2.new(0.05,0,posY,0)
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
-	b.TextSize = 16
+	b.TextSize = 15
 	b.TextColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
 	return b
 end
 
 -- Posiciones proporcionales dentro del frame
-local btnSpacing = 0.1
-local startY = 0.1
+local btnSpacing = 0.09
+local startY = 0.12
 
 local noclipBtn = makeButton("NoClip: OFF", startY)
 noclipBtn.MouseButton1Click:Connect(function()
