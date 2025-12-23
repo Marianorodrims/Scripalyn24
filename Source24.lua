@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -22,18 +23,20 @@ local fly = false
 local highJump = false
 local invisible = false
 
-local normalSpeed = 20
+local normalSpeed = 16
 local fastSpeed = 200 -- Súper rápido
 local flySpeed = 25 -- Vuelo más lento y controlable
 local jumpPowerNormal = humanoid.JumpPower
-local jumpMultiplier = 10
+local jumpPowerBoost = 200 -- salto alto seguro
+local jumpCooldown = 0.05
 
---// NOCLIP REAL
+--// NOCLIP REAL MEJORADO
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
 			if v:IsA("BasePart") then
 				v.CanCollide = false
+				v.CanTouch = false
 			end
 		end
 	end
@@ -87,21 +90,17 @@ local function escapeBase()
 	end
 end
 
---// SALTO ALTO / INFINITO
-local jumpPowerCurrent = jumpPowerNormal
+--// SALTO ALTO / INFINITO MEJORADO
 local lastJumpTime = 0
-local jumpCooldown = 0.05
-
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
 		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
 			lastJumpTime = tick()
-			humanoid.JumpPower = jumpPowerCurrent
+			humanoid.JumpPower = jumpPowerBoost
 			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-			jumpPowerCurrent = jumpPowerCurrent * 1.2
 		end
 	else
-		jumpPowerCurrent = jumpPowerNormal
+		humanoid.JumpPower = jumpPowerNormal
 	end
 end)
 
@@ -111,7 +110,7 @@ local function setInvisible(state)
 		for _, part in pairs(character:GetDescendants()) do
 			if part:IsA("BasePart") or part:IsA("MeshPart") then
 				part.LocalTransparencyModifier = state and 1 or 0
-				part.CanCollide = not state -- Para que otros no lo vean ni colisionen
+				part.CanCollide = not state
 			end
 			if part:IsA("Decal") then
 				part.Transparency = state and 1 or 0
@@ -232,7 +231,6 @@ jumpBtn.MouseButton1Click:Connect(function()
 	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
---// INVISIBLE AL LADO DEL FPS
 local invisBtn = makeButton("Invisible: OFF", 6)
 invisBtn.Position = UDim2.new(0.53,0,1,-30)
 invisBtn.MouseButton1Click:Connect(function()
@@ -254,7 +252,6 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 
 local lastTime = tick()
 local frameCount = 0
-
 RunService.RenderStepped:Connect(function()
 	frameCount = frameCount + 1
 	local now = tick()
