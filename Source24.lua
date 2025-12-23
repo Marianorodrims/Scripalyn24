@@ -1,7 +1,7 @@
 --// SERVICIOS
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -19,13 +19,12 @@ end)
 local noclip = false
 local speed = false
 local fly = false
-local menuVisible = true
 
 local normalSpeed = 16
-local fastSpeed = 120 -- ULTRA RÁPIDO
-local flySpeed = 35   -- VUELO SUAVE
+local fastSpeed = 100 -- Súper rápido
+local flySpeed = 50 -- Vuelo más controlable
 
---// NOCLIP
+--// NOCLIP REAL
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -37,15 +36,13 @@ RunService.Stepped:Connect(function()
 end)
 
 --// SPEED
-RunService.RenderStepped:Connect(function()
-	if speed and humanoid then
-		humanoid.WalkSpeed = fastSpeed
-	else
-		humanoid.WalkSpeed = normalSpeed
+local function updateSpeed()
+	if humanoid then
+		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 	end
-end)
+end
 
---// FLY
+--// FLY REAL (MÓVIL + PC)
 local bv, bg
 local function startFly()
 	if fly then return end
@@ -80,7 +77,7 @@ local function tpForward()
 	end
 end
 
---// ESCAPE BASE
+--// ESCAPE
 local function escapeBase()
 	if rootPart then
 		rootPart.CFrame = CFrame.new(0, 250, 0)
@@ -88,7 +85,7 @@ local function escapeBase()
 end
 
 ----------------------------------------------------------------
---// GUI RESPONSIVE
+--// GUI (MÓVIL FRIENDLY)
 ----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
@@ -96,101 +93,84 @@ gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
---// PANEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.AnchorPoint = Vector2.new(0.5,0.5)
-frame.Position = UDim2.new(0.5,0,0.5,0)
-frame.Size = UDim2.new(0.55,0,0.7,0) -- aumentado un poco más
+frame.Size = UDim2.new(0.55,0,0.6,0) -- un poco más grande para los botones
+frame.Position = UDim2.new(0.225,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
---// TITULO
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,35)
+title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
 title.Text = "BrainRot Stealer Pro"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
---// BOTON CERRAR
+--// CERRAR/ABRIR
 local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0,28,0,28)
-closeBtn.Position = UDim2.new(1,-33,0,4)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+closeBtn.Size = UDim2.new(0,30,0,30)
+closeBtn.Position = UDim2.new(1,-35,0,5)
 closeBtn.Text = "X"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,6)
+closeBtn.TextSize = 18
+closeBtn.TextColor3 = Color3.new(1,0,0)
+closeBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
 
---// BOTON PARA MOSTRAR MENU
-local showBtn = Instance.new("TextButton", gui)
-showBtn.Size = UDim2.new(0,50,0,50)
-showBtn.Position = UDim2.new(0,10,0,10)
-showBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
-showBtn.Text = "Menu"
-showBtn.Font = Enum.Font.GothamBold
-showBtn.TextSize = 14
-showBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", showBtn).CornerRadius = UDim.new(0,8)
-showBtn.Visible = false
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0,150,0,35)
+toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
+toggleBtn.Text = "Abrir Menu"
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 16
+toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
+toggleBtn.Visible = false
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,8)
 
 closeBtn.MouseButton1Click:Connect(function()
 	frame.Visible = false
-	showBtn.Visible = true
-	menuVisible = false
+	toggleBtn.Visible = true
 end)
 
-showBtn.MouseButton1Click:Connect(function()
+toggleBtn.MouseButton1Click:Connect(function()
 	frame.Visible = true
-	showBtn.Visible = false
-	menuVisible = true
+	toggleBtn.Visible = false
 end)
 
---// CONTAINER PARA BOTONES
-local buttonContainer = Instance.new("Frame", frame)
-buttonContainer.Size = UDim2.new(1,0,1, -50) -- espacio debajo del título
-buttonContainer.Position = UDim2.new(0,0,0,35)
-buttonContainer.BackgroundTransparency = 1
-
--- Layout automático para botones
-local layout = Instance.new("UIListLayout", buttonContainer)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0,8) -- un poco más pequeño para que no se peguen
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layout.VerticalAlignment = Enum.VerticalAlignment.Top
-
---// CREAR BOTONES OPCIONES
-local function makeButton(txt)
-	local b = Instance.new("TextButton", buttonContainer)
-	b.Size = UDim2.new(0.8,0,0,38) -- un poquito más pequeños
+--// BOTÓN CREATOR
+local function makeButton(txt, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(0.42,0,0,40) -- más pequeño para que quepan bien
+	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50) -- distribución en 2 columnas
 	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
-	b.TextSize = 15
+	b.TextSize = 16
 	b.TextColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
 	return b
 end
 
 --// BOTONES
-local noclipBtn = makeButton("NoClip: OFF")
+local noclipBtn = makeButton("NoClip: OFF", 0)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
 	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF")
+local speedBtn = makeButton("Speed: OFF", 1)
 speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
-	speedBtn.Text = "Speed: "..(speed and "ULTRA" or "OFF")
+	updateSpeed()
+	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF")
+local flyBtn = makeButton("Fly: OFF", 2)
 flyBtn.MouseButton1Click:Connect(function()
 	if fly then
 		stopFly()
@@ -201,8 +181,32 @@ flyBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local tpBtn = makeButton("TP Forward")
+local tpBtn = makeButton("TP Forward", 3)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base")
+local escBtn = makeButton("Escape Base", 4)
 escBtn.MouseButton1Click:Connect(escapeBase)
+
+----------------------------------------------------------------
+--// BORDE RAINBOW ANIMADO
+----------------------------------------------------------------
+local border = Instance.new("Frame", frame)
+border.Size = UDim2.new(1, 4, 1, 4)
+border.Position = UDim2.new(0, -2, 0, -2)
+border.BackgroundTransparency = 1
+border.BorderSizePixel = 0
+border.ZIndex = 0
+
+local uiStroke = Instance.new("UIStroke", border)
+uiStroke.Thickness = 4
+uiStroke.Color = Color3.fromRGB(255,0,0)
+uiStroke.Transparency = 0
+
+spawn(function()
+	local hue = 0
+	while true do
+		hue = (hue + 1) % 360
+		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
+		wait(0.03)
+	end
+end)
