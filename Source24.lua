@@ -24,13 +24,13 @@ local highJump = false
 local invisible = false
 
 local normalSpeed = 16
-local fastSpeed = 200
-local flySpeed = 25
+local fastSpeed = 200 -- Súper rápido
+local flySpeed = 25 -- Vuelo más lento y controlable
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200
+local jumpPowerBoost = 200 -- salto alto seguro
 local jumpCooldown = 0.05
 
---// NOCLIP
+--// NOCLIP REAL MEJORADO
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -49,12 +49,11 @@ local function updateSpeed()
 	end
 end
 
---// FLY
+--// FLY REAL (MÓVIL + PC)
 local bv, bg
 local function startFly()
 	if fly then return end
 	fly = true
-
 	bv = Instance.new("BodyVelocity")
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
 	bv.Parent = rootPart
@@ -77,7 +76,7 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP
+--// TP FORWARD
 local function tpForward()
 	if rootPart then
 		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
@@ -87,11 +86,11 @@ end
 --// ESCAPE
 local function escapeBase()
 	if rootPart then
-		rootPart.CFrame = CFrame.new(0,250,0)
+		rootPart.CFrame = CFrame.new(0, 250, 0)
 	end
 end
 
---// SALTO ALTO
+--// SALTO ALTO / INFINITO MEJORADO
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -105,10 +104,10 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// INVISIBLE
+--// INVISIBLE / TRANSPARENTE
 local function setInvisible(state)
 	if character then
-		for _,part in pairs(character:GetDescendants()) do
+		for _, part in pairs(character:GetDescendants()) do
 			if part:IsA("BasePart") or part:IsA("MeshPart") then
 				part.LocalTransparencyModifier = state and 1 or 0
 				part.CanCollide = not state
@@ -120,9 +119,9 @@ local function setInvisible(state)
 	end
 end
 
---------------------------------------------------
---// GUI
---------------------------------------------------
+----------------------------------------------------------------
+--// GUI (MÓVIL FRIENDLY)
+----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainRotMenu"
@@ -140,22 +139,13 @@ Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1,0,0,40)
 title.BackgroundColor3 = Color3.fromRGB(35,35,50)
-title.Text = "    AlyControl-Hub👩‍💻"
+title.Text = "AlyControl-Hub👩‍💻"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
---// LOGO DEL SCRIPT (ARRIBA IZQUIERDA)
-local logo = Instance.new("ImageLabel", frame)
-logo.Size = UDim2.new(0,30,0,30)
-logo.Position = UDim2.new(0,8,0,5)
-logo.BackgroundTransparency = 1
-logo.Image = "https://e7.pngegg.com/pngimages/224/890/png-clipart-logo-computer-icons-white-hat-hacker-icon-hat-trademark.png"
-logo.ScaleType = Enum.ScaleType.Fit
-logo.ZIndex = 5
-
---// CERRAR / ABRIR
+--// CERRAR/ABRIR
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(0,30,0,30)
 closeBtn.Position = UDim2.new(1,-35,0,5)
@@ -178,6 +168,7 @@ toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
 toggleBtn.Visible = false
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
 
+--// BORDE RAINBOW ANIMADO DEL TOGGLE
 local toggleStroke = Instance.new("UIStroke", toggleBtn)
 toggleStroke.Thickness = 2
 
@@ -200,7 +191,7 @@ toggleBtn.MouseButton1Click:Connect(function()
 	toggleBtn.Visible = false
 end)
 
---// BOTONES
+--// BOTÓN CREATOR
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.42,0,0,40)
@@ -214,6 +205,7 @@ local function makeButton(txt, y)
 	return b
 end
 
+--// BOTONES
 local noclipBtn = makeButton("NoClip: OFF", 0)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
@@ -250,7 +242,7 @@ jumpBtn.MouseButton1Click:Connect(function()
 	if not highJump then
 		humanoid.JumpPower = jumpPowerNormal
 	end
-	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
+	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
 local invisBtn = makeButton("Invisible: OFF", 6)
@@ -258,10 +250,10 @@ invisBtn.Position = UDim2.new(0.53,0,1,-30)
 invisBtn.MouseButton1Click:Connect(function()
 	invisible = not invisible
 	setInvisible(invisible)
-	invisBtn.Text = "Invisible: "..(invisible and "ON" or "OFF")
+	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
---// FPS
+--// FPS DISPLAY
 local fpsLabel = Instance.new("TextLabel", frame)
 fpsLabel.Size = UDim2.new(0.4,0,0,25)
 fpsLabel.Position = UDim2.new(0.05,0,1,-30)
@@ -275,23 +267,29 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function()
-	frameCount += 1
-	if tick() - lastTime >= 1 then
+	frameCount = frameCount + 1
+	local now = tick()
+	if now - lastTime >= 1 then
 		fpsLabel.Text = "FPS: "..frameCount
 		frameCount = 0
-		lastTime = tick()
+		lastTime = now
 	end
 end)
 
---// BORDE RAINBOW
+----------------------------------------------------------------
+--// BORDE RAINBOW ANIMADO
+----------------------------------------------------------------
 local border = Instance.new("Frame", frame)
-border.Size = UDim2.new(1,4,1,4)
-border.Position = UDim2.new(0,-2,0,-2)
+border.Size = UDim2.new(1, 4, 1, 4)
+border.Position = UDim2.new(0, -2, 0, -2)
 border.BackgroundTransparency = 1
 border.BorderSizePixel = 0
+border.ZIndex = 0
 
 local uiStroke = Instance.new("UIStroke", border)
 uiStroke.Thickness = 4
+uiStroke.Color = Color3.fromRGB(255,0,0)
+uiStroke.Transparency = 0
 
 spawn(function()
 	local hue = 0
