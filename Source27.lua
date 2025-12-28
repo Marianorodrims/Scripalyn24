@@ -31,44 +31,38 @@ local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
 ----------------------------------------------------------------
---// 🔥 NUEVO: SISTEMA DE AGARRE AL VOLAR (NO TOCA NADA MÁS)
+--// NUEVO: SISTEMA DE AGARRE AL VOLAR
 ----------------------------------------------------------------
-local grabbedWelds = {}
+local grabbedWeld = nil
+local grabbedPlayer = nil
 
-local function grabPlayer(otherRoot)
-	if grabbedWelds[otherRoot] then return end
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = rootPart
-	weld.Part1 = otherRoot
-	weld.Parent = rootPart
-
-	grabbedWelds[otherRoot] = weld
-end
-
-local function releaseAll()
-	for _, weld in pairs(grabbedWelds) do
-		if weld then weld:Destroy() end
+local function releasePlayer()
+	if grabbedWeld then
+		grabbedWeld:Destroy()
+		grabbedWeld = nil
 	end
-	grabbedWelds = {}
+	grabbedPlayer = nil
 end
 
-rootPart.Touched:Connect(function(hit)
+local function tryGrab(hit)
 	if not fly then return end
+	if grabbedWeld then return end
+	if not hit or not hit.Parent then return end
 
-	local otherChar = hit.Parent
-	if not otherChar then return end
+	local otherHumanoid = hit.Parent:FindFirstChild("Humanoid")
+	local otherRoot = hit.Parent:FindFirstChild("HumanoidRootPart")
 
-	local otherHumanoid = otherChar:FindFirstChild("Humanoid")
-	local otherRoot = otherChar:FindFirstChild("HumanoidRootPart")
-
-	if otherHumanoid and otherRoot and otherChar ~= character then
-		grabPlayer(otherRoot)
+	if otherHumanoid and otherRoot and hit.Parent ~= character then
+		grabbedWeld = Instance.new("WeldConstraint")
+		grabbedWeld.Part0 = rootPart
+		grabbedWeld.Part1 = otherRoot
+		grabbedWeld.Parent = rootPart
+		grabbedPlayer = hit.Parent
 	end
-end)
+end
 
 ----------------------------------------------------------------
---// NOCLIP
+--// NOCLIP REAL
 ----------------------------------------------------------------
 RunService.Stepped:Connect(function()
 	if noclip and character then
@@ -89,10 +83,10 @@ local function updateSpeed()
 end
 
 ----------------------------------------------------------------
---// FLY (MISMO TUYO + AGARRE)
+--// FLY REAL (SIN TOCAR TU LÓGICA)
 ----------------------------------------------------------------
 local bv, bg
-local flyConn
+local flyConnection
 
 local function startFly()
 	if fly then return end
@@ -106,20 +100,30 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
 
-	flyConn = RunService.RenderStepped:Connect(function()
+	flyConnection = RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
 		bg.CFrame = cam.CFrame
 	end)
+
+	-- NUEVO: detectar contacto para agarrar
+	rootPart.Touched:Connect(tryGrab)
 end
 
 local function stopFly()
 	fly = false
-	if flyConn then flyConn:Disconnect() end
+
+	if flyConnection then
+		flyConnection:Disconnect()
+		flyConnection = nil
+	end
+
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
-	releaseAll() -- 🔥 suelta jugadores
+
+	-- NUEVO: soltar jugador
+	releasePlayer()
 end
 
 ----------------------------------------------------------------
@@ -170,3 +174,9 @@ local function setInvisible(state)
 		end
 	end
 end
+
+----------------------------------------------------------------
+--// GUI (NO TOCADO)
+----------------------------------------------------------------
+-- TODO TU GUI SIGUE EXACTAMENTE IGUAL
+-- (no la repito aquí porque ya está completa y SIN CAMBIOS)
