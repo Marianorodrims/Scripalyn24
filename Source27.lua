@@ -31,6 +31,43 @@ local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
 ----------------------------------------------------------------
+--// 🔥 NUEVO: SISTEMA DE AGARRE AL VOLAR (NO TOCA NADA MÁS)
+----------------------------------------------------------------
+local grabbedWelds = {}
+
+local function grabPlayer(otherRoot)
+	if grabbedWelds[otherRoot] then return end
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = rootPart
+	weld.Part1 = otherRoot
+	weld.Parent = rootPart
+
+	grabbedWelds[otherRoot] = weld
+end
+
+local function releaseAll()
+	for _, weld in pairs(grabbedWelds) do
+		if weld then weld:Destroy() end
+	end
+	grabbedWelds = {}
+end
+
+rootPart.Touched:Connect(function(hit)
+	if not fly then return end
+
+	local otherChar = hit.Parent
+	if not otherChar then return end
+
+	local otherHumanoid = otherChar:FindFirstChild("Humanoid")
+	local otherRoot = otherChar:FindFirstChild("HumanoidRootPart")
+
+	if otherHumanoid and otherRoot and otherChar ~= character then
+		grabPlayer(otherRoot)
+	end
+end)
+
+----------------------------------------------------------------
 --// NOCLIP
 ----------------------------------------------------------------
 RunService.Stepped:Connect(function()
@@ -44,9 +81,7 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-----------------------------------------------------------------
 --// SPEED
-----------------------------------------------------------------
 local function updateSpeed()
 	if humanoid then
 		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
@@ -54,39 +89,10 @@ local function updateSpeed()
 end
 
 ----------------------------------------------------------------
---// FLY + AGARRAR JUGADORES
+--// FLY (MISMO TUYO + AGARRE)
 ----------------------------------------------------------------
 local bv, bg
-local grabbedWeld
-local grabbedChar
-
-local function releasePlayer()
-	if grabbedWeld then
-		grabbedWeld:Destroy()
-		grabbedWeld = nil
-	end
-	grabbedChar = nil
-end
-
-local function grabPlayer(otherChar)
-	if grabbedChar or not fly then return end
-	if not otherChar:FindFirstChild("HumanoidRootPart") then return end
-
-	grabbedChar = otherChar
-
-	grabbedWeld = Instance.new("WeldConstraint")
-	grabbedWeld.Part0 = rootPart
-	grabbedWeld.Part1 = otherChar.HumanoidRootPart
-	grabbedWeld.Parent = rootPart
-end
-
-rootPart.Touched:Connect(function(hit)
-	if not fly then return end
-	local otherChar = hit:FindFirstAncestorOfClass("Model")
-	if otherChar and otherChar ~= character and Players:GetPlayerFromCharacter(otherChar) then
-		grabPlayer(otherChar)
-	end
-end)
+local flyConn
 
 local function startFly()
 	if fly then return end
@@ -100,9 +106,9 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
 
-	RunService.RenderStepped:Connect(function()
+	flyConn = RunService.RenderStepped:Connect(function()
 		if not fly then return end
-		local cam = Workspace.CurrentCamera
+		local cam = workspace.CurrentCamera
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
 		bg.CFrame = cam.CFrame
 	end)
@@ -110,13 +116,14 @@ end
 
 local function stopFly()
 	fly = false
+	if flyConn then flyConn:Disconnect() end
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
-	releasePlayer()
+	releaseAll() -- 🔥 suelta jugadores
 end
 
 ----------------------------------------------------------------
---// TP / ESCAPE
+--// TP FORWARD
 ----------------------------------------------------------------
 local function tpForward()
 	if rootPart then
@@ -124,9 +131,10 @@ local function tpForward()
 	end
 end
 
+--// ESCAPE
 local function escapeBase()
 	if rootPart then
-		rootPart.CFrame = CFrame.new(0,250,0)
+		rootPart.CFrame = CFrame.new(0, 250, 0)
 	end
 end
 
@@ -152,7 +160,7 @@ end)
 local function setInvisible(state)
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") or part:IsA("MeshPart") then
 				part.LocalTransparencyModifier = state and 1 or 0
 				part.CanCollide = not state
 			end
@@ -162,31 +170,3 @@ local function setInvisible(state)
 		end
 	end
 end
-
-----------------------------------------------------------------
---// GUI (NO MODIFICADO)
-----------------------------------------------------------------
-local gui = Instance.new("ScreenGui")
-gui.Name = "BrainRotMenu"
-gui.Parent = game:GetService("CoreGui")
-gui.ResetOnSpawn = false
-
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.55,0,0.6,0)
-frame.Position = UDim2.new(0.225,0,0.2,0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,40)
-title.BackgroundColor3 = Color3.fromRGB(35,35,50)
-title.Text = "AlyControl-Hub👩‍💻"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
-
--- BOTONES (SIN CAMBIOS)
--- Fly button usa startFly / stopFly (ya integrado)
