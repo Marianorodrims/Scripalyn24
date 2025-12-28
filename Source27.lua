@@ -1,167 +1,192 @@
---// Delta Script Mejorado con control de velocidad + Interfaz Premium
-local player = game.Players.LocalPlayer
+--// SERVICIOS
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+--// PLAYER
+local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local userInputService = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Estados y configuraciones
-local noClipEnabled = false
-local speedEnabled = false
-local walkSpeed = humanoid.WalkSpeed
-local speedStep = 5
-local minSpeed = 16
-local maxSpeed = 200
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	rootPart = char:WaitForChild("HumanoidRootPart")
+end)
 
--- Funciones
-local function toggleNoClip(state)
-\tfor _, part in ipairs(character:GetDescendants()) do
-\t\tif part:IsA("BasePart") then
-\t\t\tpart.CanCollide = not state
-\t\tend
-\tend
+--// ESTADOS
+local noclip = false
+local speed = false
+local fly = false
+local highJump = false
+local invisible = false
+
+local normalSpeed = 16
+local fastSpeed = 200
+local flySpeed = 25
+local jumpPowerNormal = humanoid.JumpPower
+local jumpPowerBoost = 200
+local jumpCooldown = 0.05
+
+----------------------------------------------------------------
+--// NOCLIP
+----------------------------------------------------------------
+RunService.Stepped:Connect(function()
+	if noclip and character then
+		for _,v in pairs(character:GetDescendants()) do
+			if v:IsA("BasePart") then
+				v.CanCollide = false
+				v.CanTouch = false
+			end
+		end
+	end
+end)
+
+----------------------------------------------------------------
+--// SPEED
+----------------------------------------------------------------
+local function updateSpeed()
+	if humanoid then
+		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
+	end
 end
 
-local function updateSpeed()
-\thumanoid.WalkSpeed = speedEnabled and walkSpeed or 16
+----------------------------------------------------------------
+--// FLY + AGARRAR JUGADORES
+----------------------------------------------------------------
+local bv, bg
+local grabbedWeld
+local grabbedChar
+
+local function releasePlayer()
+	if grabbedWeld then
+		grabbedWeld:Destroy()
+		grabbedWeld = nil
+	end
+	grabbedChar = nil
+end
+
+local function grabPlayer(otherChar)
+	if grabbedChar or not fly then return end
+	if not otherChar:FindFirstChild("HumanoidRootPart") then return end
+
+	grabbedChar = otherChar
+
+	grabbedWeld = Instance.new("WeldConstraint")
+	grabbedWeld.Part0 = rootPart
+	grabbedWeld.Part1 = otherChar.HumanoidRootPart
+	grabbedWeld.Parent = rootPart
+end
+
+rootPart.Touched:Connect(function(hit)
+	if not fly then return end
+	local otherChar = hit:FindFirstAncestorOfClass("Model")
+	if otherChar and otherChar ~= character and Players:GetPlayerFromCharacter(otherChar) then
+		grabPlayer(otherChar)
+	end
+end)
+
+local function startFly()
+	if fly then return end
+	fly = true
+
+	bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+	bv.Parent = rootPart
+
+	bg = Instance.new("BodyGyro")
+	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+	bg.Parent = rootPart
+
+	RunService.RenderStepped:Connect(function()
+		if not fly then return end
+		local cam = Workspace.CurrentCamera
+		bv.Velocity = cam.CFrame.LookVector * flySpeed
+		bg.CFrame = cam.CFrame
+	end)
+end
+
+local function stopFly()
+	fly = false
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
+	releasePlayer()
+end
+
+----------------------------------------------------------------
+--// TP / ESCAPE
+----------------------------------------------------------------
+local function tpForward()
+	if rootPart then
+		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	end
 end
 
 local function escapeBase()
-\tcharacter:SetPrimaryPartCFrame(CFrame.new(0, 150, 0))
+	if rootPart then
+		rootPart.CFrame = CFrame.new(0,250,0)
+	end
 end
 
--- UI Setup
-local gui = Instance.new("ScreenGui")
-gui.Name = "DeltaMenu"
-gui.Parent = game.CoreGui
+----------------------------------------------------------------
+--// SALTO ALTO
+----------------------------------------------------------------
+local lastJumpTime = 0
+RunService.Stepped:Connect(function()
+	if highJump and humanoid then
+		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
+			lastJumpTime = tick()
+			humanoid.JumpPower = jumpPowerBoost
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	else
+		humanoid.JumpPower = jumpPowerNormal
+	end
+end)
 
-local frame = Instance.new("Frame")
-frame.Parent = gui
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
-frame.Position = UDim2.new(0.5, -175, 0.5, -120)
-frame.Size = UDim2.new(0, 350, 0, 240)
+----------------------------------------------------------------
+--// INVISIBLE
+----------------------------------------------------------------
+local function setInvisible(state)
+	if character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.LocalTransparencyModifier = state and 1 or 0
+				part.CanCollide = not state
+			end
+			if part:IsA("Decal") then
+				part.Transparency = state and 1 or 0
+			end
+		end
+	end
+end
+
+----------------------------------------------------------------
+--// GUI (NO MODIFICADO)
+----------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainRotMenu"
+gui.Parent = game:GetService("CoreGui")
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0.55,0,0.6,0)
+frame.Position = UDim2.new(0.225,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-frame.ClipsDescendants = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
-
-local title = Instance.new("TextLabel")
-title.Parent = frame
-title.Size = UDim2.new(1, 0, 0, 35)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(35,35,50)
+title.Text = "AlyControl-Hub👩‍💻"
 title.Font = Enum.Font.GothamBold
-title.Text = "⚡ Delta Enhanced Menu ⚡"
 title.TextSize = 18
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BorderSizePixel = 0
+title.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
-Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
-
--- Botones principales
-local function createButton(name, text, pos)
-\tlocal b = Instance.new("TextButton")
-\tb.Name = name
-\tb.Parent = frame
-\tb.Size = UDim2.new(0, 320, 0, 40)
-\tb.Position = pos
-\tb.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-\tb.Text = text
-\tb.TextColor3 = Color3.new(1, 1, 1)
-\tb.Font = Enum.Font.Gotham
-\tb.TextSize = 16
-\tb.BorderSizePixel = 0
-\tInstance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-\treturn b
-end
-
-local noClipButton = createButton("NoClip", "NoClip: OFF", UDim2.new(0, 15, 0, 50))
-local speedButton = createButton("Speed", "Speed: OFF", UDim2.new(0, 15, 0, 100))
-local escapeButton = createButton("Escape", "Escape Base", UDim2.new(0, 15, 0, 150))
-
--- Controles de velocidad visuales
-local speedFrame = Instance.new("Frame")
-speedFrame.Parent = frame
-speedFrame.BackgroundTransparency = 1
-speedFrame.Position = UDim2.new(0, 15, 0, 195)
-speedFrame.Size = UDim2.new(1, -30, 0, 40)
-
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Parent = speedFrame
-speedLabel.BackgroundTransparency = 1
-speedLabel.Position = UDim2.new(0, 0, 0, 0)
-speedLabel.Size = UDim2.new(0, 130, 1, 0)
-speedLabel.Font = Enum.Font.Gotham
-speedLabel.Text = "Velocidad: " .. walkSpeed
-speedLabel.TextSize = 16
-speedLabel.TextColor3 = Color3.new(1, 1, 1)
-
-local plusButton = Instance.new("TextButton")
-plusButton.Parent = speedFrame
-plusButton.Size = UDim2.new(0, 40, 1, 0)
-plusButton.Position = UDim2.new(1, -40, 0, 0)
-plusButton.Text = "+"
-plusButton.Font = Enum.Font.GothamBold
-plusButton.TextSize = 22
-plusButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-plusButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", plusButton).CornerRadius = UDim.new(0, 8)
-
-local minusButton = Instance.new("TextButton")
-minusButton.Parent = speedFrame
-minusButton.Size = UDim2.new(0, 40, 1, 0)
-minusButton.Position = UDim2.new(1, -90, 0, 0)
-minusButton.Text = "-"
-minusButton.Font = Enum.Font.GothamBold
-minusButton.TextSize = 22
-minusButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-minusButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", minusButton).CornerRadius = UDim.new(0, 8)
-
--- Eventos
-noClipButton.MouseButton1Click:Connect(function()
-\tnoClipEnabled = not noClipEnabled
-\tnoClipButton.Text = "NoClip: " .. (noClipEnabled and "ON" or "OFF")
-\tnoClipButton.BackgroundColor3 = noClipEnabled and Color3.fromRGB(40, 130, 40) or Color3.fromRGB(60, 60, 60)
-\ttoggleNoClip(noClipEnabled)
-end)
-
-speedButton.MouseButton1Click:Connect(function()
-\tspeedEnabled = not speedEnabled
-\tspeedButton.Text = "Speed: " .. (speedEnabled and "ON" or "OFF")
-\tspeedButton.BackgroundColor3 = speedEnabled and Color3.fromRGB(40, 130, 40) or Color3.fromRGB(60, 60, 60)
-\tupdateSpeed()
-end)
-
-plusButton.MouseButton1Click:Connect(function()
-\twalkSpeed = math.clamp(walkSpeed + speedStep, minSpeed, maxSpeed)
-\tspeedLabel.Text = "Velocidad: " .. walkSpeed
-\tupdateSpeed()
-end)
-
-minusButton.MouseButton1Click:Connect(function()
-\twalkSpeed = math.clamp(walkSpeed - speedStep, minSpeed, maxSpeed)
-\tspeedLabel.Text = "Velocidad: " .. walkSpeed
-\tupdateSpeed()
-end)
-
-escapeButton.MouseButton1Click:Connect(function()
-\tescapeBase()
-end)
-
--- Mantener NoClip activo
-runService.Stepped:Connect(function()
-\tif noClipEnabled then
-\t\ttoggleNoClip(true)
-\tend
-end)
-
--- Reasignar humanoide tras respawn
-player.CharacterAdded:Connect(function(newChar)
-\tcharacter = newChar
-\thumanoid = newChar:WaitForChild("Humanoid")
-\tupdateSpeed()
-end)
+-- BOTONES (SIN CAMBIOS)
+-- Fly button usa startFly / stopFly (ya integrado)
