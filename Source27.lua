@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -14,6 +15,7 @@ player.CharacterAdded:Connect(function(char)
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
+	connectTouch()
 end)
 
 --// ESTADOS
@@ -22,16 +24,16 @@ local speed = false
 local fly = false
 local highJump = false
 local invisible = false
-local flyHit = false -- NUEVO: estado Golpe Volador
+local flyHit = false -- Golpe automático al tocar jugadores
 
 local normalSpeed = 16
-local fastSpeed = 200 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local fastSpeed = 200
+local flySpeed = 25
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200 -- salto alto seguro
+local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
---// NOCLIP REAL MEJORADO
+--// NOCLIP
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -50,7 +52,7 @@ local function updateSpeed()
 	end
 end
 
---// FLY REAL (MÓVIL + PC)
+--// FLY
 local bv, bg
 local function startFly()
 	if fly then return end
@@ -91,7 +93,7 @@ local function escapeBase()
 	end
 end
 
---// SALTO ALTO / INFINITO MEJORADO
+--// SALTO ALTO
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -105,7 +107,7 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// INVISIBLE / TRANSPARENTE
+--// INVISIBLE
 local function setInvisible(state)
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
@@ -120,10 +122,41 @@ local function setInvisible(state)
 	end
 end
 
-----------------------------------------------------------------
---// GUI (MÓVIL FRIENDLY)
-----------------------------------------------------------------
+--// FUNCIONES GOLPE VOLADOR
+local function pushPlayer(otherCharacter)
+	if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
+		local hrp = otherCharacter.HumanoidRootPart
+		local direction = (hrp.Position - rootPart.Position).Unit
+		local bv = Instance.new("BodyVelocity")
+		bv.Velocity = direction * 150 + Vector3.new(0,75,0)
+		bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+		bv.Parent = hrp
+		Debris:AddItem(bv, 0.35)
+	end
+end
 
+local function onTouch(hit)
+	if flyHit and hit.Parent and hit.Parent ~= character then
+		local otherHumanoid = hit.Parent:FindFirstChild("Humanoid")
+		if otherHumanoid then
+			pushPlayer(hit.Parent)
+		end
+	end
+end
+
+function connectTouch()
+	for _, part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Touched:Connect(onTouch)
+		end
+	end
+end
+
+connectTouch()
+
+----------------------------------------------------------------
+--// GUI
+----------------------------------------------------------------
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
@@ -254,53 +287,10 @@ invisBtn.MouseButton1Click:Connect(function()
 	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
---// NUEVO BOTÓN: Golpe Volador
 local flyHitBtn = makeButton("Golpe Volador: OFF", 7)
 flyHitBtn.MouseButton1Click:Connect(function()
 	flyHit = not flyHit
 	flyHitBtn.Text = "Golpe Volador: "..(flyHit and "ON" or "OFF")
-end)
-
---// FUNCION QUE EMPUJA OTROS JUGADORES
-local function pushPlayer(otherCharacter)
-	if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
-		local hrp = otherCharacter.HumanoidRootPart
-		local direction = (hrp.Position - rootPart.Position).Unit
-		local bv = Instance.new("BodyVelocity")
-		bv.Velocity = direction * 100 + Vector3.new(0,50,0) -- fuerza de empuje
-		bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-		bv.Parent = hrp
-		game:GetService("Debris"):AddItem(bv, 0.3) -- se destruye rápido
-	end
-end
-
---// DETECCIÓN DE GOLPES
-local function onTouch(hit)
-	if flyHit and hit.Parent then
-		local otherHumanoid = hit.Parent:FindFirstChild("Humanoid")
-		if otherHumanoid and hit.Parent ~= character then
-			pushPlayer(hit.Parent)
-		end
-	end
-end
-
--- Conectar a todas las partes del personaje
-for _, part in pairs(character:GetDescendants()) do
-	if part:IsA("BasePart") then
-		part.Touched:Connect(onTouch)
-	end
-end
-
--- Reconectar cuando reaparece el personaje
-player.CharacterAdded:Connect(function(char)
-	character = char
-	humanoid = char:WaitForChild("Humanoid")
-	rootPart = char:WaitForChild("HumanoidRootPart")
-	for _, part in pairs(character:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Touched:Connect(onTouch)
-		end
-	end
 end)
 
 --// FPS DISPLAY
