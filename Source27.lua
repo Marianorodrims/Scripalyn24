@@ -77,17 +77,21 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP
+--// TP FORWARD
 local function tpForward()
-	rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	if rootPart then
+		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	end
 end
 
 --// ESCAPE
 local function escapeBase()
-	rootPart.CFrame = CFrame.new(0,250,0)
+	if rootPart then
+		rootPart.CFrame = CFrame.new(0, 250, 0)
+	end
 end
 
---// SALTO
+--// SALTO ALTO
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -103,60 +107,75 @@ end)
 
 --// INVISIBLE
 local function setInvisible(state)
-	for _,p in pairs(character:GetDescendants()) do
-		if p:IsA("BasePart") then
-			p.LocalTransparencyModifier = state and 1 or 0
-			p.CanCollide = not state
+	if character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") or part:IsA("MeshPart") then
+				part.LocalTransparencyModifier = state and 1 or 0
+				part.CanCollide = not state
+			end
+			if part:IsA("Decal") then
+				part.Transparency = state and 1 or 0
+			end
 		end
 	end
 end
 
 --// GUI
-local gui = Instance.new("ScreenGui", game.CoreGui)
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainRotMenu"
+gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,600,0,420)
-frame.Position = UDim2.new(0.5,-300,0.5,-210)
-frame.BackgroundColor3 = Color3.fromRGB(15,18,25)
+frame.Size = UDim2.new(0.55,0,0.6,0)
+frame.Position = UDim2.new(0.225,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
--- HEADER
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,50)
-title.Text = "AlyControl Hub"
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(35,35,50)
+title.Text = "AlyControl-Hub👩‍💻"
 title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-title.TextXAlignment = Left
-title.TextColor3 = Color3.fromRGB(120,180,255)
-title.BackgroundColor3 = Color3.fromRGB(18,22,30)
-title.PaddingLeft = UDim.new(0,20)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,16)
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
--- CLOSE
 local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0,32,0,32)
-closeBtn.Position = UDim2.new(1,-42,0,9)
-closeBtn.Text = "✕"
+closeBtn.Size = UDim2.new(0,30,0,30)
+closeBtn.Position = UDim2.new(1,-35,0,5)
+closeBtn.Text = "X"
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 18
-closeBtn.TextColor3 = Color3.fromRGB(255,80,80)
-closeBtn.BackgroundColor3 = Color3.fromRGB(35,35,50)
+closeBtn.TextColor3 = Color3.new(1,0,0)
+closeBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
 
--- TOGGLE BTN
 local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0,160,0,36)
+toggleBtn.Size = UDim2.new(0,150,0,35)
 toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
-toggleBtn.Text = "AlyControl Hub"
+toggleBtn.Text = "AlyControl-Hub"
 toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 15
+toggleBtn.TextSize = 16
 toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.BackgroundTransparency = 0.4
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
 toggleBtn.Visible = false
-toggleBtn.BackgroundColor3 = Color3.fromRGB(20,20,30)
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
+
+local toggleStroke = Instance.new("UIStroke", toggleBtn)
+toggleStroke.Thickness = 2
+
+spawn(function()
+	local hue = 0
+	while true do
+		hue = (hue + 1) % 360
+		toggleStroke.Color = Color3.fromHSV(hue/360,1,1)
+		wait(0.04)
+	end
+end)
 
 closeBtn.MouseButton1Click:Connect(function()
 	frame.Visible = false
@@ -168,83 +187,142 @@ toggleBtn.MouseButton1Click:Connect(function()
 	toggleBtn.Visible = false
 end)
 
--- CONTENT
-local content = Instance.new("ScrollingFrame", frame)
-content.Position = UDim2.new(0,0,0,60)
-content.Size = UDim2.new(1,0,1,-70)
-content.CanvasSize = UDim2.new(0,0,0,0)
-content.ScrollBarImageTransparency = 1
-content.BackgroundTransparency = 1
-
-local list = Instance.new("UIListLayout", content)
-list.Padding = UDim.new(0,12)
-
-local function card(text, callback)
-	local c = Instance.new("Frame", content)
-	c.Size = UDim2.new(1,-40,0,52)
-	c.BackgroundColor3 = Color3.fromRGB(22,26,36)
-	c.Position = UDim2.new(0,20,0,0)
-	Instance.new("UICorner", c).CornerRadius = UDim.new(0,12)
-
-	local l = Instance.new("TextLabel", c)
-	l.Text = text
-	l.Font = Enum.Font.Gotham
-	l.TextSize = 15
-	l.TextColor3 = Color3.fromRGB(235,235,235)
-	l.Size = UDim2.new(1,-100,1,0)
-	l.TextXAlignment = Left
-	l.Position = UDim2.new(0,15,0,0)
-	l.BackgroundTransparency = 1
-
-	local b = Instance.new("TextButton", c)
-	b.Size = UDim2.new(0,40,0,24)
-	b.Position = UDim2.new(1,-60,0.5,-12)
-	b.Text = "OFF"
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 12
-	b.BackgroundColor3 = Color3.fromRGB(60,60,70)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(1,0)
-
-	local state = false
-	b.MouseButton1Click:Connect(function()
-		state = not state
-		b.Text = state and "ON" or "OFF"
-		b.BackgroundColor3 = state and Color3.fromRGB(90,170,255) or Color3.fromRGB(60,60,70)
-		callback(state)
-	end)
-
-	list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		content.CanvasSize = UDim2.new(0,0,0,list.AbsoluteContentSize.Y+20)
-	end)
+local function makeButton(txt, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(0.42,0,0,40)
+	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
+	b.Text = txt
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 16
+	b.TextColor3 = Color3.new(1,1,1)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	return b
 end
 
--- OPCIONES
-card("NoClip", function(v) noclip = v end)
-card("Speed", function(v) speed = v updateSpeed() end)
-card("Fly", function(v) if v then startFly() else stopFly() end end)
-card("Salto Alto", function(v) highJump = v end)
-card("Invisible", function(v) invisible = v setInvisible(v) end)
-card("TP Forward", function() tpForward() end)
-card("Escape Base", function() escapeBase() end)
+local noclipBtn = makeButton("NoClip: OFF", 0)
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
+end)
+
+local speedBtn = makeButton("Speed: OFF", 1)
+speedBtn.MouseButton1Click:Connect(function()
+	speed = not speed
+	updateSpeed()
+	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
+end)
+
+local flyBtn = makeButton("Fly: OFF", 2)
+flyBtn.MouseButton1Click:Connect(function()
+	if fly then
+		stopFly()
+		flyBtn.Text = "Fly: OFF"
+	else
+		startFly()
+		flyBtn.Text = "Fly: ON"
+	end
+end)
+
+local tpBtn = makeButton("TP Forward", 3)
+tpBtn.MouseButton1Click:Connect(tpForward)
+
+local escBtn = makeButton("Escape Base", 4)
+escBtn.MouseButton1Click:Connect(escapeBase)
+
+local jumpBtn = makeButton("Salto Alto: OFF", 5)
+jumpBtn.MouseButton1Click:Connect(function()
+	highJump = not highJump
+	if not highJump then humanoid.JumpPower = jumpPowerNormal end
+	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
+end)
+
+local invisBtn = makeButton("Invisible: OFF", 6)
+invisBtn.Position = UDim2.new(0.53,0,1,-30)
+invisBtn.MouseButton1Click:Connect(function()
+	invisible = not invisible
+	setInvisible(invisible)
+	invisBtn.Text = "Invisible: "..(invisible and "ON" or "OFF")
+end)
+
+--// FPS
+local fpsLabel = Instance.new("TextLabel", frame)
+fpsLabel.Size = UDim2.new(0.4,0,0,25)
+fpsLabel.Position = UDim2.new(0.05,0,1,-30)
+fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
+fpsLabel.TextColor3 = Color3.new(1,1,1)
+fpsLabel.Font = Enum.Font.Gotham
+fpsLabel.TextSize = 14
+fpsLabel.Text = "FPS: 0"
+Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
+
+local lastTime = tick()
+local frameCount = 0
+RunService.RenderStepped:Connect(function()
+	frameCount += 1
+	if tick() - lastTime >= 1 then
+		fpsLabel.Text = "FPS: "..frameCount
+		frameCount = 0
+		lastTime = tick()
+	end
+end)
+
+--// BORDE RAINBOW
+local border = Instance.new("Frame", frame)
+border.Size = UDim2.new(1,4,1,4)
+border.Position = UDim2.new(0,-2,0,-2)
+border.BackgroundTransparency = 1
+border.BorderSizePixel = 0
+
+local uiStroke = Instance.new("UIStroke", border)
+uiStroke.Thickness = 4
+
+spawn(function()
+	local hue = 0
+	while true do
+		hue = (hue + 1) % 360
+		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
+		wait(0.03)
+	end
+end)
 
 ----------------------------------------------------------------
---// FLY GRAB
+--// FLY GRAB / ABRAZAR JUGADOR (AGREGADO SIN TOCAR NADA)
 ----------------------------------------------------------------
-local grabbedWeld
+
+local grabbedWeld = nil
+local grabbedHRP = nil
+
+local function releaseGrab()
+	if grabbedWeld then
+		grabbedWeld:Destroy()
+		grabbedWeld = nil
+	end
+	grabbedHRP = nil
+end
 
 rootPart.Touched:Connect(function(hit)
-	if not fly or grabbedWeld then return end
-	local char = hit.Parent
-	if char and char ~= character and char:FindFirstChild("HumanoidRootPart") then
-		grabbedWeld = Instance.new("WeldConstraint", rootPart)
+	if not fly then return end
+	if grabbedWeld then return end
+
+	local otherChar = hit.Parent
+	if not otherChar or otherChar == character then return end
+
+	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
+	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
+
+	if otherHumanoid and otherHRP then
+		otherHRP.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
+
+		grabbedWeld = Instance.new("WeldConstraint")
 		grabbedWeld.Part0 = rootPart
-		grabbedWeld.Part1 = char.HumanoidRootPart
+		grabbedWeld.Part1 = otherHRP
+		grabbedWeld.Parent = rootPart
 	end
 end)
 
 RunService.Stepped:Connect(function()
 	if not fly and grabbedWeld then
-		grabbedWeld:Destroy()
-		grabbedWeld = nil
+		releaseGrab()
 	end
 end)
