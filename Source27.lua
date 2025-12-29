@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -287,8 +288,13 @@ spawn(function()
 end)
 
 ----------------------------------------------------------------
---// FLY GRAB / ABRAZAR JUGADOR (AGREGADO SIN TOCAR NADA)
+--// FLY GRAB / ABRAZAR JUGADOR FUNCIONAL
 ----------------------------------------------------------------
+
+-- RemoteEvent
+local flyGrabEvent = ReplicatedStorage:FindFirstChild("FlyGrabEvent") 
+	or Instance.new("RemoteEvent", ReplicatedStorage)
+flyGrabEvent.Name = "FlyGrabEvent"
 
 local grabbedWeld = nil
 local grabbedHRP = nil
@@ -298,9 +304,13 @@ local function releaseGrab()
 		grabbedWeld:Destroy()
 		grabbedWeld = nil
 	end
+	if grabbedHRP then
+		grabbedHRP.Anchored = false
+	end
 	grabbedHRP = nil
 end
 
+-- Detectar toque
 rootPart.Touched:Connect(function(hit)
 	if not fly then return end
 	if grabbedWeld then return end
@@ -310,19 +320,42 @@ rootPart.Touched:Connect(function(hit)
 
 	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
 	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
-
 	if otherHumanoid and otherHRP then
-		otherHRP.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
-
-		grabbedWeld = Instance.new("WeldConstraint")
-		grabbedWeld.Part0 = rootPart
-		grabbedWeld.Part1 = otherHRP
-		grabbedWeld.Parent = rootPart
+		flyGrabEvent:FireServer(otherChar)
 	end
 end)
 
+-- Soltar si no vuelas
 RunService.Stepped:Connect(function()
 	if not fly and grabbedWeld then
 		releaseGrab()
 	end
 end)
+
+--// SERVIDOR (LocalScript no puede hacer esto)
+-- Este código debes poner en un Script en ServerScriptService:
+--[[
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local flyGrabEvent = ReplicatedStorage:WaitForChild("FlyGrabEvent")
+
+flyGrabEvent.OnServerEvent:Connect(function(playerF, targetChar)
+	local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+	local playerChar = playerF.Character
+	if not targetHRP or not playerChar then return end
+
+	local playerHRP = playerChar:FindFirstChild("HumanoidRootPart")
+	if not playerHRP then return end
+
+	-- Limpiar cualquier weld anterior
+	for _, weld in pairs(playerHRP:GetChildren()) do
+		if weld:IsA("WeldConstraint") then weld:Destroy() end
+	end
+
+	targetHRP.Anchored = false
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = playerHRP
+	weld.Part1 = targetHRP
+	weld.Parent = playerHRP
+end)
+]]
