@@ -22,15 +22,16 @@ local speed = false
 local fly = false
 local highJump = false
 local invisible = false
+local flyHit = false -- NUEVO: estado Golpe Volador
 
 local normalSpeed = 16
-local fastSpeed = 200
-local flySpeed = 25
+local fastSpeed = 200 -- Súper rápido
+local flySpeed = 25 -- Vuelo más lento y controlable
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200
+local jumpPowerBoost = 200 -- salto alto seguro
 local jumpCooldown = 0.05
 
---// NOCLIP
+--// NOCLIP REAL MEJORADO
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -49,12 +50,11 @@ local function updateSpeed()
 	end
 end
 
---// FLY
+--// FLY REAL (MÓVIL + PC)
 local bv, bg
 local function startFly()
 	if fly then return end
 	fly = true
-
 	bv = Instance.new("BodyVelocity")
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
 	bv.Parent = rootPart
@@ -91,7 +91,7 @@ local function escapeBase()
 	end
 end
 
---// SALTO ALTO
+--// SALTO ALTO / INFINITO MEJORADO
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -105,7 +105,7 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// INVISIBLE
+--// INVISIBLE / TRANSPARENTE
 local function setInvisible(state)
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
@@ -120,7 +120,10 @@ local function setInvisible(state)
 	end
 end
 
---// GUI
+----------------------------------------------------------------
+--// GUI (MÓVIL FRIENDLY)
+----------------------------------------------------------------
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
@@ -143,6 +146,7 @@ title.TextSize = 18
 title.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
 
+--// CERRAR/ABRIR
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(0,30,0,30)
 closeBtn.Position = UDim2.new(1,-35,0,5)
@@ -165,6 +169,7 @@ toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
 toggleBtn.Visible = false
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
 
+--// BORDE RAINBOW ANIMADO DEL TOGGLE
 local toggleStroke = Instance.new("UIStroke", toggleBtn)
 toggleStroke.Thickness = 2
 
@@ -187,6 +192,7 @@ toggleBtn.MouseButton1Click:Connect(function()
 	toggleBtn.Visible = false
 end)
 
+--// BOTÓN CREATOR
 local function makeButton(txt, y)
 	local b = Instance.new("TextButton", frame)
 	b.Size = UDim2.new(0.42,0,0,40)
@@ -200,6 +206,7 @@ local function makeButton(txt, y)
 	return b
 end
 
+--// BOTONES
 local noclipBtn = makeButton("NoClip: OFF", 0)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
@@ -233,8 +240,10 @@ escBtn.MouseButton1Click:Connect(escapeBase)
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
 	highJump = not highJump
-	if not highJump then humanoid.JumpPower = jumpPowerNormal end
-	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
+	if not highJump then
+		humanoid.JumpPower = jumpPowerNormal
+	end
+	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
 local invisBtn = makeButton("Invisible: OFF", 6)
@@ -242,10 +251,59 @@ invisBtn.Position = UDim2.new(0.53,0,1,-30)
 invisBtn.MouseButton1Click:Connect(function()
 	invisible = not invisible
 	setInvisible(invisible)
-	invisBtn.Text = "Invisible: "..(invisible and "ON" or "OFF")
+	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
---// FPS
+--// NUEVO BOTÓN: Golpe Volador
+local flyHitBtn = makeButton("Golpe Volador: OFF", 7)
+flyHitBtn.MouseButton1Click:Connect(function()
+	flyHit = not flyHit
+	flyHitBtn.Text = "Golpe Volador: "..(flyHit and "ON" or "OFF")
+end)
+
+--// FUNCION QUE EMPUJA OTROS JUGADORES
+local function pushPlayer(otherCharacter)
+	if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
+		local hrp = otherCharacter.HumanoidRootPart
+		local direction = (hrp.Position - rootPart.Position).Unit
+		local bv = Instance.new("BodyVelocity")
+		bv.Velocity = direction * 100 + Vector3.new(0,50,0) -- fuerza de empuje
+		bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+		bv.Parent = hrp
+		game:GetService("Debris"):AddItem(bv, 0.3) -- se destruye rápido
+	end
+end
+
+--// DETECCIÓN DE GOLPES
+local function onTouch(hit)
+	if flyHit and hit.Parent then
+		local otherHumanoid = hit.Parent:FindFirstChild("Humanoid")
+		if otherHumanoid and hit.Parent ~= character then
+			pushPlayer(hit.Parent)
+		end
+	end
+end
+
+-- Conectar a todas las partes del personaje
+for _, part in pairs(character:GetDescendants()) do
+	if part:IsA("BasePart") then
+		part.Touched:Connect(onTouch)
+	end
+end
+
+-- Reconectar cuando reaparece el personaje
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	rootPart = char:WaitForChild("HumanoidRootPart")
+	for _, part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Touched:Connect(onTouch)
+		end
+	end
+end)
+
+--// FPS DISPLAY
 local fpsLabel = Instance.new("TextLabel", frame)
 fpsLabel.Size = UDim2.new(0.4,0,0,25)
 fpsLabel.Position = UDim2.new(0.05,0,1,-30)
@@ -259,23 +317,29 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function()
-	frameCount += 1
-	if tick() - lastTime >= 1 then
+	frameCount = frameCount + 1
+	local now = tick()
+	if now - lastTime >= 1 then
 		fpsLabel.Text = "FPS: "..frameCount
 		frameCount = 0
-		lastTime = tick()
+		lastTime = now
 	end
 end)
 
---// BORDE RAINBOW
+----------------------------------------------------------------
+--// BORDE RAINBOW ANIMADO
+----------------------------------------------------------------
 local border = Instance.new("Frame", frame)
-border.Size = UDim2.new(1,4,1,4)
-border.Position = UDim2.new(0,-2,0,-2)
+border.Size = UDim2.new(1, 4, 1, 4)
+border.Position = UDim2.new(0, -2, 0, -2)
 border.BackgroundTransparency = 1
 border.BorderSizePixel = 0
+border.ZIndex = 0
 
 local uiStroke = Instance.new("UIStroke", border)
 uiStroke.Thickness = 4
+uiStroke.Color = Color3.fromRGB(255,0,0)
+uiStroke.Transparency = 0
 
 spawn(function()
 	local hue = 0
@@ -283,73 +347,5 @@ spawn(function()
 		hue = (hue + 1) % 360
 		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
 		wait(0.03)
-	end
-end)
-
-----------------------------------------------------------------
---// FLY HUG / ABRAZAR JUGADOR MULTIPLE Y RÁPIDO
-----------------------------------------------------------------
-local huggedPlayer = nil
-local hugAttachment, alignPos, alignOri, targetAttachment = nil, nil, nil, nil
-
-local hugRefAttachment = Instance.new("Attachment", rootPart)
-
-local normalFlySpeed = flySpeed
-local hugFlySpeed = 60 -- velocidad cuando abrazas
-
-local function releaseHug()
-	if alignPos then alignPos:Destroy() alignPos = nil end
-	if alignOri then alignOri:Destroy() alignOri = nil end
-	if targetAttachment then targetAttachment:Destroy() targetAttachment = nil end
-	if huggedPlayer then
-		local hrp = huggedPlayer:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			hrp.Anchored = false
-		end
-	end
-	huggedPlayer = nil
-	flySpeed = normalFlySpeed
-end
-
-local function hugPlayer(otherChar)
-	if not fly then return end
-	if huggedPlayer == otherChar then return end
-	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
-	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
-	if otherHumanoid and otherHRP then
-		releaseHug()
-		huggedPlayer = otherChar
-		otherHRP.Anchored = false
-
-		targetAttachment = Instance.new("Attachment", otherHRP)
-		alignPos = Instance.new("AlignPosition")
-		alignPos.Attachment0 = targetAttachment
-		alignPos.Attachment1 = hugRefAttachment
-		alignPos.RigidityEnabled = true
-		alignPos.MaxForce = 1e5
-		alignPos.Responsiveness = 50
-		alignPos.Parent = otherHRP
-
-		alignOri = Instance.new("AlignOrientation")
-		alignOri.Attachment0 = Instance.new("Attachment", otherHRP)
-		alignOri.Attachment1 = hugRefAttachment
-		alignOri.MaxTorque = 1e5
-		alignOri.Responsiveness = 50
-		alignOri.Parent = otherHRP
-
-		flySpeed = hugFlySpeed
-	end
-end
-
-rootPart.Touched:Connect(function(hit)
-	local otherChar = hit.Parent
-	if otherChar and otherChar ~= character then
-		hugPlayer(otherChar)
-	end
-end)
-
-RunService.RenderStepped:Connect(function()
-	if not fly then
-		releaseHug()
 	end
 end)
