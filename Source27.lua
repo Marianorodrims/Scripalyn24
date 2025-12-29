@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --// PLAYER
 local player = Players.LocalPlayer
@@ -288,11 +287,11 @@ spawn(function()
 end)
 
 ----------------------------------------------------------------
---// FLY HUG / ABRAZAR JUGADOR VOLANDO
+--// FLY HUG / ABRAZAR JUGADOR VOLANDO (FUNCIONAL)
 ----------------------------------------------------------------
-
 local huggedPlayer = nil
 local alignPos, alignOri = nil, nil
+local hugAttachment = Instance.new("Attachment", rootPart)
 
 local function releaseHug()
 	if alignPos then
@@ -310,7 +309,6 @@ local function releaseHug()
 	huggedPlayer = nil
 end
 
--- Detectar toque mientras vuelas
 rootPart.Touched:Connect(function(hit)
 	if not fly then return end
 	if huggedPlayer then return end
@@ -324,33 +322,27 @@ rootPart.Touched:Connect(function(hit)
 		huggedPlayer = otherChar
 		otherHRP.Anchored = false
 
+		-- AlignPosition
 		alignPos = Instance.new("AlignPosition")
+		alignPos.Attachment0 = Instance.new("Attachment", otherHRP)
+		alignPos.Attachment1 = hugAttachment
 		alignPos.MaxForce = 1e5
 		alignPos.Responsiveness = 50
 		alignPos.RigidityEnabled = true
 		alignPos.Parent = otherHRP
-		local att0 = Instance.new("Attachment", otherHRP)
-		alignPos.Attachment0 = att0
-		alignPos.Position = rootPart.Position + Vector3.new(0,0,-2)
 
+		-- AlignOrientation
 		alignOri = Instance.new("AlignOrientation")
+		alignOri.Attachment0 = Instance.new("Attachment", otherHRP)
+		alignOri.Attachment1 = hugAttachment
 		alignOri.MaxTorque = 1e5
 		alignOri.Responsiveness = 50
 		alignOri.Parent = otherHRP
-		local att1 = Instance.new("Attachment", otherHRP)
-		alignOri.Attachment0 = att1
 	end
 end)
 
--- Actualizar posición cada frame
 RunService.RenderStepped:Connect(function()
-	if fly and huggedPlayer and alignPos and alignOri then
-		local hrp = huggedPlayer:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			alignPos.Position = rootPart.Position + Vector3.new(0,0,-2)
-			alignOri.CFrame = rootPart.CFrame
-		end
-	else
+	if not fly or not huggedPlayer then
 		releaseHug()
 	end
 end)
