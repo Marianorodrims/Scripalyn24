@@ -44,9 +44,7 @@ end)
 
 --// SPEED
 local function updateSpeed()
-	if humanoid then
-		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
-	end
+	humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
 end
 
 --// FLY
@@ -55,19 +53,18 @@ local function startFly()
 	if fly then return end
 	fly = true
 
-	bv = Instance.new("BodyVelocity")
+	bv = Instance.new("BodyVelocity", rootPart)
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-	bv.Parent = rootPart
 
-	bg = Instance.new("BodyGyro")
+	bg = Instance.new("BodyGyro", rootPart)
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
-	bg.Parent = rootPart
 
 	RunService.RenderStepped:Connect(function()
-		if not fly then return end
-		local cam = workspace.CurrentCamera
-		bv.Velocity = cam.CFrame.LookVector * flySpeed
-		bg.CFrame = cam.CFrame
+		if fly then
+			local cam = workspace.CurrentCamera
+			bv.Velocity = cam.CFrame.LookVector * flySpeed
+			bg.CFrame = cam.CFrame
+		end
 	end)
 end
 
@@ -77,29 +74,22 @@ local function stopFly()
 	if bg then bg:Destroy() end
 end
 
---// TP FORWARD
+--// TP / ESCAPE
 local function tpForward()
-	if rootPart then
-		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
-	end
+	rootPart.CFrame += rootPart.CFrame.LookVector * 10
 end
 
---// ESCAPE
 local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0, 250, 0)
-	end
+	rootPart.CFrame = CFrame.new(0,250,0)
 end
 
 --// SALTO ALTO
-local lastJumpTime = 0
+local lastJump = 0
 RunService.Stepped:Connect(function()
-	if highJump and humanoid then
-		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
-			lastJumpTime = tick()
-			humanoid.JumpPower = jumpPowerBoost
-			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-		end
+	if highJump and humanoid.Jump and tick()-lastJump > jumpCooldown then
+		lastJump = tick()
+		humanoid.JumpPower = jumpPowerBoost
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 	else
 		humanoid.JumpPower = jumpPowerNormal
 	end
@@ -107,138 +97,89 @@ end)
 
 --// INVISIBLE
 local function setInvisible(state)
-	if character then
-		for _, part in pairs(character:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("MeshPart") then
-				part.LocalTransparencyModifier = state and 1 or 0
-				part.CanCollide = not state
-			end
-			if part:IsA("Decal") then
-				part.Transparency = state and 1 or 0
-			end
+	for _,p in pairs(character:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.LocalTransparencyModifier = state and 1 or 0
+			p.CanCollide = not state
 		end
 	end
 end
 
 --// GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "BrainRotMenu"
-gui.Parent = game:GetService("CoreGui")
+local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.55,0,0.6,0)
-frame.Position = UDim2.new(0.225,0,0.2,0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+frame.Size = UDim2.new(0.6,0,0.65,0)
+frame.Position = UDim2.new(0.2,0,0.18,0)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,26)
+frame.Active, frame.Draggable = true, true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,40)
-title.BackgroundColor3 = Color3.fromRGB(35,35,50)
-title.Text = "AlyControl-Hub👩‍💻"
+-- SIDEBAR
+local sidebar = Instance.new("Frame", frame)
+sidebar.Size = UDim2.new(0.23,0,1,0)
+sidebar.BackgroundColor3 = Color3.fromRGB(14,14,20)
+Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0,16)
+
+local title = Instance.new("TextLabel", sidebar)
+title.Size = UDim2.new(1,0,0,60)
+title.BackgroundTransparency = 1
+title.Text = "AlyControl\nHub"
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", title).CornerRadius = UDim.new(0,14)
+title.TextSize = 20
+title.TextColor3 = Color3.fromRGB(120,180,255)
 
-local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0,30,0,30)
-closeBtn.Position = UDim2.new(1,-35,0,5)
-closeBtn.Text = "X"
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18
-closeBtn.TextColor3 = Color3.new(1,0,0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(45,45,60)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
+-- CONTENIDO
+local content = Instance.new("Frame", frame)
+content.Position = UDim2.new(0.25,0,0.06,0)
+content.Size = UDim2.new(0.72,0,0.9,0)
+content.BackgroundTransparency = 1
 
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0,150,0,35)
-toggleBtn.Position = UDim2.new(0.05,0,0.05,0)
-toggleBtn.Text = "AlyControl-Hub"
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 16
-toggleBtn.TextColor3 = Color3.new(1,1,1)
-toggleBtn.BackgroundTransparency = 0.4
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-toggleBtn.Visible = false
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
-
-local toggleStroke = Instance.new("UIStroke", toggleBtn)
-toggleStroke.Thickness = 2
-
-spawn(function()
-	local hue = 0
-	while true do
-		hue = (hue + 1) % 360
-		toggleStroke.Color = Color3.fromHSV(hue/360,1,1)
-		wait(0.04)
-	end
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-	frame.Visible = false
-	toggleBtn.Visible = true
-end)
-
-toggleBtn.MouseButton1Click:Connect(function()
-	frame.Visible = true
-	toggleBtn.Visible = false
-end)
-
-local function makeButton(txt, y)
-	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0.42,0,0,40)
-	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
-	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
+-- BOTÓN CREAR
+local function makeButton(txt, i)
+	local b = Instance.new("TextButton", content)
+	b.Size = UDim2.new(0.45,0,0,42)
+	b.Position = UDim2.new((i%2)*0.5,0,math.floor(i/2)*0.12,0)
 	b.Text = txt
 	b.Font = Enum.Font.Gotham
-	b.TextSize = 16
+	b.TextSize = 15
 	b.TextColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+	Instance.new("UIStroke", b).Color = Color3.fromRGB(90,130,255)
 	return b
 end
 
-local noclipBtn = makeButton("NoClip: OFF", 0)
+local noclipBtn = makeButton("NoClip: OFF",0)
 noclipBtn.MouseButton1Click:Connect(function()
 	noclip = not noclip
 	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
-local speedBtn = makeButton("Speed: OFF", 1)
+local speedBtn = makeButton("Speed: OFF",1)
 speedBtn.MouseButton1Click:Connect(function()
 	speed = not speed
 	updateSpeed()
 	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
 end)
 
-local flyBtn = makeButton("Fly: OFF", 2)
+local flyBtn = makeButton("Fly: OFF",2)
 flyBtn.MouseButton1Click:Connect(function()
-	if fly then
-		stopFly()
-		flyBtn.Text = "Fly: OFF"
-	else
-		startFly()
-		flyBtn.Text = "Fly: ON"
-	end
+	if fly then stopFly() else startFly() end
+	flyBtn.Text = "Fly: "..(fly and "ON" or "OFF")
 end)
 
-local tpBtn = makeButton("TP Forward", 3)
-tpBtn.MouseButton1Click:Connect(tpForward)
+makeButton("TP Forward",3).MouseButton1Click:Connect(tpForward)
+makeButton("Escape Base",4).MouseButton1Click:Connect(escapeBase)
 
-local escBtn = makeButton("Escape Base", 4)
-escBtn.MouseButton1Click:Connect(escapeBase)
-
-local jumpBtn = makeButton("Salto Alto: OFF", 5)
+local jumpBtn = makeButton("Salto Alto: OFF",5)
 jumpBtn.MouseButton1Click:Connect(function()
 	highJump = not highJump
-	if not highJump then humanoid.JumpPower = jumpPowerNormal end
 	jumpBtn.Text = "Salto Alto: "..(highJump and "ON" or "OFF")
 end)
 
-local invisBtn = makeButton("Invisible: OFF", 6)
-invisBtn.Position = UDim2.new(0.53,0,1,-30)
+local invisBtn = makeButton("Invisible: OFF",6)
 invisBtn.MouseButton1Click:Connect(function()
 	invisible = not invisible
 	setInvisible(invisible)
@@ -246,98 +187,64 @@ invisBtn.MouseButton1Click:Connect(function()
 end)
 
 --// FPS
-local fpsLabel = Instance.new("TextLabel", frame)
-fpsLabel.Size = UDim2.new(0.4,0,0,25)
-fpsLabel.Position = UDim2.new(0.05,0,1,-30)
-fpsLabel.BackgroundColor3 = Color3.fromRGB(35,35,50)
-fpsLabel.TextColor3 = Color3.new(1,1,1)
-fpsLabel.Font = Enum.Font.Gotham
-fpsLabel.TextSize = 14
-fpsLabel.Text = "FPS: 0"
-Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
+local fps = Instance.new("TextLabel", sidebar)
+fps.Position = UDim2.new(0.1,0,0.9,0)
+fps.Size = UDim2.new(0.8,0,0,25)
+fps.BackgroundTransparency = 1
+fps.Font = Enum.Font.Gotham
+fps.TextSize = 14
+fps.TextColor3 = Color3.new(1,1,1)
 
-local lastTime = tick()
-local frameCount = 0
+local f, t = 0, tick()
 RunService.RenderStepped:Connect(function()
-	frameCount += 1
-	if tick() - lastTime >= 1 then
-		fpsLabel.Text = "FPS: "..frameCount
-		frameCount = 0
-		lastTime = tick()
+	f+=1
+	if tick()-t>=1 then
+		fps.Text = "FPS: "..f
+		f=0 t=tick()
 	end
 end)
 
---// BORDE RAINBOW
+--// BORDE RAINBOW (NO TOCADO)
 local border = Instance.new("Frame", frame)
 border.Size = UDim2.new(1,4,1,4)
 border.Position = UDim2.new(0,-2,0,-2)
 border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-
-local uiStroke = Instance.new("UIStroke", border)
-uiStroke.Thickness = 4
-
-spawn(function()
-	local hue = 0
+local stroke = Instance.new("UIStroke", border)
+stroke.Thickness = 4
+task.spawn(function()
+	local h=0
 	while true do
-		hue = (hue + 1) % 360
-		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
-		wait(0.03)
+		h=(h+1)%360
+		stroke.Color=Color3.fromHSV(h/360,1,1)
+		task.wait(0.03)
 	end
 end)
 
 ----------------------------------------------------------------
---// FLY GRAB / ABRAZAR JUGADOR + ANIMACIÓN REAL
+--// FLY GRAB / ABRAZO + ANIMACIÓN REAL
 ----------------------------------------------------------------
-
-local grabbedWeld = nil
-local hugTrack = nil
-local victimTrack = nil
-
-local hugAnim = Instance.new("Animation")
+local grabbedWeld
+local hugAnim = Instance.new("Animation", humanoid)
 hugAnim.AnimationId = "rbxassetid://507770239"
-
-local victimAnim = Instance.new("Animation")
-victimAnim.AnimationId = "rbxassetid://507777268"
-
-local function stopGrab()
-	if grabbedWeld then
-		grabbedWeld:Destroy()
-		grabbedWeld = nil
-	end
-	if hugTrack then hugTrack:Stop() hugTrack = nil end
-	if victimTrack then victimTrack:Stop() victimTrack = nil end
-end
 
 rootPart.Touched:Connect(function(hit)
 	if not fly or grabbedWeld then return end
-
-	local otherChar = hit.Parent
-	if not otherChar or otherChar == character then return end
-
-	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
-	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
-
-	if otherHumanoid and otherHRP then
-		otherHRP.CFrame = rootPart.CFrame * CFrame.new(0, 0, -1.8)
-
-		grabbedWeld = Instance.new("WeldConstraint")
-		grabbedWeld.Part0 = rootPart
-		grabbedWeld.Part1 = otherHRP
-		grabbedWeld.Parent = rootPart
-
-		hugTrack = humanoid:LoadAnimation(hugAnim)
-		hugTrack.Looped = true
-		hugTrack:Play()
-
-		victimTrack = otherHumanoid:LoadAnimation(victimAnim)
-		victimTrack.Looped = true
-		victimTrack:Play()
+	local ch = hit.Parent
+	if ch and ch~=character then
+		local h = ch:FindFirstChildOfClass("Humanoid")
+		local hrp = ch:FindFirstChild("HumanoidRootPart")
+		if h and hrp then
+			hrp.CFrame = rootPart.CFrame * CFrame.new(0,0,-1.8)
+			grabbedWeld = Instance.new("WeldConstraint", rootPart)
+			grabbedWeld.Part0, grabbedWeld.Part1 = rootPart, hrp
+			humanoid:LoadAnimation(hugAnim):Play()
+		end
 	end
 end)
 
 RunService.Stepped:Connect(function()
 	if not fly and grabbedWeld then
-		stopGrab()
+		grabbedWeld:Destroy()
+		grabbedWeld=nil
 	end
 end)
