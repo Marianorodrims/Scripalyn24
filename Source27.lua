@@ -288,32 +288,32 @@ spawn(function()
 end)
 
 ----------------------------------------------------------------
---// FLY GRAB / ABRAZAR JUGADOR FUNCIONAL
+--// FLY HUG / ABRAZAR JUGADOR VOLANDO
 ----------------------------------------------------------------
 
--- RemoteEvent
-local flyGrabEvent = ReplicatedStorage:FindFirstChild("FlyGrabEvent") 
-	or Instance.new("RemoteEvent", ReplicatedStorage)
-flyGrabEvent.Name = "FlyGrabEvent"
+local huggedPlayer = nil
+local alignPos, alignOri = nil, nil
 
-local grabbedWeld = nil
-local grabbedHRP = nil
-
-local function releaseGrab()
-	if grabbedWeld then
-		grabbedWeld:Destroy()
-		grabbedWeld = nil
+local function releaseHug()
+	if alignPos then
+		alignPos:Destroy()
+		alignPos = nil
 	end
-	if grabbedHRP then
-		grabbedHRP.Anchored = false
+	if alignOri then
+		alignOri:Destroy()
+		alignOri = nil
 	end
-	grabbedHRP = nil
+	if huggedPlayer then
+		local hrp = huggedPlayer:FindFirstChild("HumanoidRootPart")
+		if hrp then hrp.Anchored = false end
+	end
+	huggedPlayer = nil
 end
 
--- Detectar toque
+-- Detectar toque mientras vuelas
 rootPart.Touched:Connect(function(hit)
 	if not fly then return end
-	if grabbedWeld then return end
+	if huggedPlayer then return end
 
 	local otherChar = hit.Parent
 	if not otherChar or otherChar == character then return end
@@ -321,41 +321,36 @@ rootPart.Touched:Connect(function(hit)
 	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
 	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
 	if otherHumanoid and otherHRP then
-		flyGrabEvent:FireServer(otherChar)
+		huggedPlayer = otherChar
+		otherHRP.Anchored = false
+
+		alignPos = Instance.new("AlignPosition")
+		alignPos.MaxForce = 1e5
+		alignPos.Responsiveness = 50
+		alignPos.RigidityEnabled = true
+		alignPos.Parent = otherHRP
+		local att0 = Instance.new("Attachment", otherHRP)
+		alignPos.Attachment0 = att0
+		alignPos.Position = rootPart.Position + Vector3.new(0,0,-2)
+
+		alignOri = Instance.new("AlignOrientation")
+		alignOri.MaxTorque = 1e5
+		alignOri.Responsiveness = 50
+		alignOri.Parent = otherHRP
+		local att1 = Instance.new("Attachment", otherHRP)
+		alignOri.Attachment0 = att1
 	end
 end)
 
--- Soltar si no vuelas
-RunService.Stepped:Connect(function()
-	if not fly and grabbedWeld then
-		releaseGrab()
+-- Actualizar posición cada frame
+RunService.RenderStepped:Connect(function()
+	if fly and huggedPlayer and alignPos and alignOri then
+		local hrp = huggedPlayer:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			alignPos.Position = rootPart.Position + Vector3.new(0,0,-2)
+			alignOri.CFrame = rootPart.CFrame
+		end
+	else
+		releaseHug()
 	end
 end)
-
---// SERVIDOR (LocalScript no puede hacer esto)
--- Este código debes poner en un Script en ServerScriptService:
---[[
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local flyGrabEvent = ReplicatedStorage:WaitForChild("FlyGrabEvent")
-
-flyGrabEvent.OnServerEvent:Connect(function(playerF, targetChar)
-	local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
-	local playerChar = playerF.Character
-	if not targetHRP or not playerChar then return end
-
-	local playerHRP = playerChar:FindFirstChild("HumanoidRootPart")
-	if not playerHRP then return end
-
-	-- Limpiar cualquier weld anterior
-	for _, weld in pairs(playerHRP:GetChildren()) do
-		if weld:IsA("WeldConstraint") then weld:Destroy() end
-	end
-
-	targetHRP.Anchored = false
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = playerHRP
-	weld.Part1 = targetHRP
-	weld.Parent = playerHRP
-end)
-]]
