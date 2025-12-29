@@ -287,13 +287,15 @@ spawn(function()
 end)
 
 ----------------------------------------------------------------
---// FLY HUG / ABRAZAR JUGADOR TOTALMENTE FUNCIONAL
+--// FLY HUG / ABRAZAR JUGADOR MULTIPLE Y RÁPIDO
 ----------------------------------------------------------------
 local huggedPlayer = nil
 local hugAttachment, alignPos, alignOri, targetAttachment = nil, nil, nil, nil
 
--- Attachment en tu personaje que será la referencia del abrazo
 local hugRefAttachment = Instance.new("Attachment", rootPart)
+
+local normalFlySpeed = flySpeed
+local hugFlySpeed = 60 -- velocidad cuando abrazas
 
 local function releaseHug()
 	if alignPos then alignPos:Destroy() alignPos = nil end
@@ -306,17 +308,19 @@ local function releaseHug()
 		end
 	end
 	huggedPlayer = nil
+	flySpeed = normalFlySpeed
 end
 
 local function hugPlayer(otherChar)
-	if huggedPlayer then return end
+	if not fly then return end
+	if huggedPlayer == otherChar then return end
 	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
 	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
 	if otherHumanoid and otherHRP then
+		releaseHug()
 		huggedPlayer = otherChar
 		otherHRP.Anchored = false
 
-		-- Crear attachments
 		targetAttachment = Instance.new("Attachment", otherHRP)
 		alignPos = Instance.new("AlignPosition")
 		alignPos.Attachment0 = targetAttachment
@@ -332,11 +336,12 @@ local function hugPlayer(otherChar)
 		alignOri.MaxTorque = 1e5
 		alignOri.Responsiveness = 50
 		alignOri.Parent = otherHRP
+
+		flySpeed = hugFlySpeed
 	end
 end
 
 rootPart.Touched:Connect(function(hit)
-	if not fly then return end
 	local otherChar = hit.Parent
 	if otherChar and otherChar ~= character then
 		hugPlayer(otherChar)
