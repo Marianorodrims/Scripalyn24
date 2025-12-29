@@ -9,11 +9,13 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
+local animator = humanoid:WaitForChild("Animator")
 
 player.CharacterAdded:Connect(function(char)
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
+	animator = humanoid:WaitForChild("Animator")
 end)
 
 --// ESTADOS
@@ -22,7 +24,6 @@ local speed = false
 local fly = false
 local highJump = false
 local invisible = false
-local flyHit = false -- nuevo estado para golpear jugadores
 
 local normalSpeed = 16
 local fastSpeed = 200
@@ -31,7 +32,16 @@ local jumpPowerNormal = humanoid.JumpPower
 local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
+-------------------------------------------------
+--// ANIMACIÓN DE VUELO
+-------------------------------------------------
+local flyAnim = Instance.new("Animation")
+flyAnim.AnimationId = "rbxassetid://507766666" -- animación flotando
+local flyTrack
+
+-------------------------------------------------
 --// NOCLIP
+-------------------------------------------------
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -50,11 +60,15 @@ local function updateSpeed()
 	end
 end
 
---// FLY
-local bv, bg
+-------------------------------------------------
+--// FLY REAL + ANIMACIÓN
+-------------------------------------------------
+local bv, bg, flyConn
+
 local function startFly()
 	if fly then return end
 	fly = true
+
 	bv = Instance.new("BodyVelocity")
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
 	bv.Parent = rootPart
@@ -63,7 +77,13 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
 
-	RunService.RenderStepped:Connect(function()
+	if not flyTrack then
+		flyTrack = animator:LoadAnimation(flyAnim)
+	end
+	flyTrack:Play()
+	flyTrack.Looped = true
+
+	flyConn = RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
@@ -73,11 +93,15 @@ end
 
 local function stopFly()
 	fly = false
+	if flyConn then flyConn:Disconnect() end
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
+	if flyTrack then flyTrack:Stop() end
 end
 
+-------------------------------------------------
 --// TP FORWARD
+-------------------------------------------------
 local function tpForward()
 	if rootPart then
 		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
@@ -91,7 +115,9 @@ local function escapeBase()
 	end
 end
 
+-------------------------------------------------
 --// SALTO ALTO
+-------------------------------------------------
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -105,7 +131,9 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
+-------------------------------------------------
 --// INVISIBLE
+-------------------------------------------------
 local function setInvisible(state)
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
@@ -119,27 +147,6 @@ local function setInvisible(state)
 		end
 	end
 end
-
---// GOLPE VOLADOR
-local function hitPlayers()
-	if flyHit and character and rootPart then
-		for _, plr in pairs(Players:GetPlayers()) do
-			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-				local targetRoot = plr.Character.HumanoidRootPart
-				local distance = (rootPart.Position - targetRoot.Position).Magnitude
-				if distance <= 10 then
-					local body = Instance.new("BodyVelocity")
-					body.Velocity = (targetRoot.Position - rootPart.Position).Unit * 150 + Vector3.new(0,50,0)
-					body.MaxForce = Vector3.new(1e5,1e5,1e5)
-					body.Parent = targetRoot
-					game.Debris:AddItem(body,0.5)
-				end
-			end
-		end
-	end
-end
-
-RunService.Heartbeat:Connect(hitPlayers)
 
 ----------------------------------------------------------------
 --// GUI (MÓVIL FRIENDLY)
@@ -190,9 +197,10 @@ toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
 toggleBtn.Visible = false
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,10)
 
---// BORDE RAINBOW TOGGLE
+--// BORDE RAINBOW ANIMADO DEL TOGGLE
 local toggleStroke = Instance.new("UIStroke", toggleBtn)
 toggleStroke.Thickness = 2
+
 spawn(function()
 	local hue = 0
 	while true do
@@ -253,31 +261,28 @@ end)
 
 local tpBtn = makeButton("TP Forward", 3)
 tpBtn.MouseButton1Click:Connect(tpForward)
+
 local escBtn = makeButton("Escape Base", 4)
 escBtn.MouseButton1Click:Connect(escapeBase)
 
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
 	highJump = not highJump
-	if not highJump then humanoid.JumpPower = jumpPowerNormal end
+	if not highJump then
+		humanoid.JumpPower = jumpPowerNormal
+	end
 	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
 local invisBtn = makeButton("Invisible: OFF", 6)
-invisBtn.Position = UDim2.new(0.53,0,1,-30) -- tu posición original
+invisBtn.Position = UDim2.new(0.53,0,1,-30)
 invisBtn.MouseButton1Click:Connect(function()
 	invisible = not invisible
 	setInvisible(invisible)
 	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
-local flyHitBtn = makeButton("Golpe Volador: OFF", 7) -- botón nuevo
-flyHitBtn.MouseButton1Click:Connect(function()
-	flyHit = not flyHit
-	flyHitBtn.Text = "Golpe Volador: "..(flyHit and "ON" or "OFF")
-end)
-
---// FPS
+--// FPS DISPLAY
 local fpsLabel = Instance.new("TextLabel", frame)
 fpsLabel.Size = UDim2.new(0.4,0,0,25)
 fpsLabel.Position = UDim2.new(0.05,0,1,-30)
@@ -291,27 +296,24 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function()
-	frameCount = frameCount + 1
-	local now = tick()
-	if now - lastTime >= 1 then
+	frameCount += 1
+	if tick() - lastTime >= 1 then
 		fpsLabel.Text = "FPS: "..frameCount
 		frameCount = 0
-		lastTime = now
+		lastTime = tick()
 	end
 end)
 
---// BORDE RAINBOW FRAME
+----------------------------------------------------------------
+--// BORDE RAINBOW ANIMADO
+----------------------------------------------------------------
 local border = Instance.new("Frame", frame)
 border.Size = UDim2.new(1, 4, 1, 4)
 border.Position = UDim2.new(0, -2, 0, -2)
 border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-border.ZIndex = 0
 
 local uiStroke = Instance.new("UIStroke", border)
 uiStroke.Thickness = 4
-uiStroke.Color = Color3.fromRGB(255,0,0)
-uiStroke.Transparency = 0
 
 spawn(function()
 	local hue = 0
