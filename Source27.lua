@@ -287,62 +287,64 @@ spawn(function()
 end)
 
 ----------------------------------------------------------------
---// FLY HUG / ABRAZAR JUGADOR VOLANDO (FUNCIONAL)
+--// FLY HUG / ABRAZAR JUGADOR TOTALMENTE FUNCIONAL
 ----------------------------------------------------------------
 local huggedPlayer = nil
-local alignPos, alignOri = nil, nil
-local hugAttachment = Instance.new("Attachment", rootPart)
+local hugAttachment, alignPos, alignOri, targetAttachment = nil, nil, nil, nil
+
+-- Attachment en tu personaje que será la referencia del abrazo
+local hugRefAttachment = Instance.new("Attachment", rootPart)
 
 local function releaseHug()
-	if alignPos then
-		alignPos:Destroy()
-		alignPos = nil
-	end
-	if alignOri then
-		alignOri:Destroy()
-		alignOri = nil
-	end
+	if alignPos then alignPos:Destroy() alignPos = nil end
+	if alignOri then alignOri:Destroy() alignOri = nil end
+	if targetAttachment then targetAttachment:Destroy() targetAttachment = nil end
 	if huggedPlayer then
 		local hrp = huggedPlayer:FindFirstChild("HumanoidRootPart")
-		if hrp then hrp.Anchored = false end
+		if hrp then
+			hrp.Anchored = false
+		end
 	end
 	huggedPlayer = nil
 end
 
-rootPart.Touched:Connect(function(hit)
-	if not fly then return end
+local function hugPlayer(otherChar)
 	if huggedPlayer then return end
-
-	local otherChar = hit.Parent
-	if not otherChar or otherChar == character then return end
-
 	local otherHumanoid = otherChar:FindFirstChildOfClass("Humanoid")
 	local otherHRP = otherChar:FindFirstChild("HumanoidRootPart")
 	if otherHumanoid and otherHRP then
 		huggedPlayer = otherChar
 		otherHRP.Anchored = false
 
-		-- AlignPosition
+		-- Crear attachments
+		targetAttachment = Instance.new("Attachment", otherHRP)
 		alignPos = Instance.new("AlignPosition")
-		alignPos.Attachment0 = Instance.new("Attachment", otherHRP)
-		alignPos.Attachment1 = hugAttachment
+		alignPos.Attachment0 = targetAttachment
+		alignPos.Attachment1 = hugRefAttachment
+		alignPos.RigidityEnabled = true
 		alignPos.MaxForce = 1e5
 		alignPos.Responsiveness = 50
-		alignPos.RigidityEnabled = true
 		alignPos.Parent = otherHRP
 
-		-- AlignOrientation
 		alignOri = Instance.new("AlignOrientation")
 		alignOri.Attachment0 = Instance.new("Attachment", otherHRP)
-		alignOri.Attachment1 = hugAttachment
+		alignOri.Attachment1 = hugRefAttachment
 		alignOri.MaxTorque = 1e5
 		alignOri.Responsiveness = 50
 		alignOri.Parent = otherHRP
 	end
+end
+
+rootPart.Touched:Connect(function(hit)
+	if not fly then return end
+	local otherChar = hit.Parent
+	if otherChar and otherChar ~= character then
+		hugPlayer(otherChar)
+	end
 end)
 
 RunService.RenderStepped:Connect(function()
-	if not fly or not huggedPlayer then
+	if not fly then
 		releaseHug()
 	end
 end)
