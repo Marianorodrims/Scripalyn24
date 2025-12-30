@@ -9,11 +9,13 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
+local animator = humanoid:WaitForChild("Animator")
 
 player.CharacterAdded:Connect(function(char)
-character = char
-humanoid = char:WaitForChild("Humanoid")
-rootPart = char:WaitForChild("HumanoidRootPart")
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	rootPart = char:WaitForChild("HumanoidRootPart")
+	animator = humanoid:WaitForChild("Animator")
 end)
 
 --// ESTADOS
@@ -24,106 +26,131 @@ local highJump = false
 local invisible = false
 
 local normalSpeed = 16
-local fastSpeed = 200 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local fastSpeed = 200
+local flySpeed = 25
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200 -- salto alto seguro
+local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
---// NOCLIP REAL MEJORADO
+-------------------------------------------------
+--// ANIMACIÓN DE VUELO
+-------------------------------------------------
+local flyAnim = Instance.new("Animation")
+flyAnim.AnimationId = "rbxassetid://507766666" -- animación flotando
+local flyTrack
+
+-------------------------------------------------
+--// NOCLIP
+-------------------------------------------------
 RunService.Stepped:Connect(function()
-if noclip and character then
-for _,v in pairs(character:GetDescendants()) do
-if v:IsA("BasePart") then
-v.CanCollide = false
-v.CanTouch = false
-end
-end
-end
+	if noclip and character then
+		for _,v in pairs(character:GetDescendants()) do
+			if v:IsA("BasePart") then
+				v.CanCollide = false
+				v.CanTouch = false
+			end
+		end
+	end
 end)
 
 --// SPEED
 local function updateSpeed()
-if humanoid then
-humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
-end
+	if humanoid then
+		humanoid.WalkSpeed = speed and fastSpeed or normalSpeed
+	end
 end
 
---// FLY REAL (MÓVIL + PC)
-local bv, bg
+-------------------------------------------------
+--// FLY REAL + ANIMACIÓN
+-------------------------------------------------
+local bv, bg, flyConn
+
 local function startFly()
-if fly then return end
-fly = true
-bv = Instance.new("BodyVelocity")
-bv.MaxForce = Vector3.new(1e5,1e5,1e5)
-bv.Parent = rootPart
+	if fly then return end
+	fly = true
 
-bg = Instance.new("BodyGyro")  
-bg.MaxTorque = Vector3.new(1e5,1e5,1e5)  
-bg.Parent = rootPart  
+	bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+	bv.Parent = rootPart
 
-RunService.RenderStepped:Connect(function()  
-	if not fly then return end  
-	local cam = workspace.CurrentCamera  
-	bv.Velocity = cam.CFrame.LookVector * flySpeed  
-	bg.CFrame = cam.CFrame  
-end)
+	bg = Instance.new("BodyGyro")
+	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+	bg.Parent = rootPart
 
+	if not flyTrack then
+		flyTrack = animator:LoadAnimation(flyAnim)
+	end
+	flyTrack:Play()
+	flyTrack.Looped = true
+
+	flyConn = RunService.RenderStepped:Connect(function()
+		if not fly then return end
+		local cam = workspace.CurrentCamera
+		bv.Velocity = cam.CFrame.LookVector * flySpeed
+		bg.CFrame = cam.CFrame
+	end)
 end
 
 local function stopFly()
-fly = false
-if bv then bv:Destroy() end
-if bg then bg:Destroy() end
+	fly = false
+	if flyConn then flyConn:Disconnect() end
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
+	if flyTrack then flyTrack:Stop() end
 end
 
+-------------------------------------------------
 --// TP FORWARD
+-------------------------------------------------
 local function tpForward()
-if rootPart then
-rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
-end
+	if rootPart then
+		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
+	end
 end
 
 --// ESCAPE
 local function escapeBase()
-if rootPart then
-rootPart.CFrame = CFrame.new(0, 250, 0)
-end
+	if rootPart then
+		rootPart.CFrame = CFrame.new(0, 250, 0)
+	end
 end
 
---// SALTO ALTO / INFINITO MEJORADO
+-------------------------------------------------
+--// SALTO ALTO
+-------------------------------------------------
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
-if highJump and humanoid then
-if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
-lastJumpTime = tick()
-humanoid.JumpPower = jumpPowerBoost
-humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-end
-else
-humanoid.JumpPower = jumpPowerNormal
-end
+	if highJump and humanoid then
+		if humanoid.Jump and tick() - lastJumpTime > jumpCooldown then
+			lastJumpTime = tick()
+			humanoid.JumpPower = jumpPowerBoost
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	else
+		humanoid.JumpPower = jumpPowerNormal
+	end
 end)
 
---// INVISIBLE / TRANSPARENTE
+-------------------------------------------------
+--// INVISIBLE
+-------------------------------------------------
 local function setInvisible(state)
-if character then
-for _, part in pairs(character:GetDescendants()) do
-if part:IsA("BasePart") or part:IsA("MeshPart") then
-part.LocalTransparencyModifier = state and 1 or 0
-part.CanCollide = not state
-end
-if part:IsA("Decal") then
-part.Transparency = state and 1 or 0
-end
-end
-end
+	if character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") or part:IsA("MeshPart") then
+				part.LocalTransparencyModifier = state and 1 or 0
+				part.CanCollide = not state
+			end
+			if part:IsA("Decal") then
+				part.Transparency = state and 1 or 0
+			end
+		end
+	end
 end
 
-
----
-
+----------------------------------------------------------------
 --// GUI (MÓVIL FRIENDLY)
+----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainRotMenu"
@@ -175,61 +202,61 @@ local toggleStroke = Instance.new("UIStroke", toggleBtn)
 toggleStroke.Thickness = 2
 
 spawn(function()
-local hue = 0
-while true do
-hue = (hue + 1) % 360
-toggleStroke.Color = Color3.fromHSV(hue/360,1,1)
-wait(0.04)
-end
+	local hue = 0
+	while true do
+		hue = (hue + 1) % 360
+		toggleStroke.Color = Color3.fromHSV(hue/360,1,1)
+		wait(0.04)
+	end
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-frame.Visible = false
-toggleBtn.Visible = true
+	frame.Visible = false
+	toggleBtn.Visible = true
 end)
 
 toggleBtn.MouseButton1Click:Connect(function()
-frame.Visible = true
-toggleBtn.Visible = false
+	frame.Visible = true
+	toggleBtn.Visible = false
 end)
 
 --// BOTÓN CREATOR
 local function makeButton(txt, y)
-local b = Instance.new("TextButton", frame)
-b.Size = UDim2.new(0.42,0,0,40)
-b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
-b.BackgroundColor3 = Color3.fromRGB(45,45,60)
-b.Text = txt
-b.Font = Enum.Font.Gotham
-b.TextSize = 16
-b.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
-return b
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(0.42,0,0,40)
+	b.Position = UDim2.new(0.05 + (y%2)*0.48,0,0,40 + math.floor(y/2)*50)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,60)
+	b.Text = txt
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 16
+	b.TextColor3 = Color3.new(1,1,1)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	return b
 end
 
 --// BOTONES
 local noclipBtn = makeButton("NoClip: OFF", 0)
 noclipBtn.MouseButton1Click:Connect(function()
-noclip = not noclip
-noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
+	noclip = not noclip
+	noclipBtn.Text = "NoClip: "..(noclip and "ON" or "OFF")
 end)
 
 local speedBtn = makeButton("Speed: OFF", 1)
 speedBtn.MouseButton1Click:Connect(function()
-speed = not speed
-updateSpeed()
-speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
+	speed = not speed
+	updateSpeed()
+	speedBtn.Text = "Speed: "..(speed and "ON" or "OFF")
 end)
 
 local flyBtn = makeButton("Fly: OFF", 2)
 flyBtn.MouseButton1Click:Connect(function()
-if fly then
-stopFly()
-flyBtn.Text = "Fly: OFF"
-else
-startFly()
-flyBtn.Text = "Fly: ON"
-end
+	if fly then
+		stopFly()
+		flyBtn.Text = "Fly: OFF"
+	else
+		startFly()
+		flyBtn.Text = "Fly: ON"
+	end
 end)
 
 local tpBtn = makeButton("TP Forward", 3)
@@ -240,19 +267,19 @@ escBtn.MouseButton1Click:Connect(escapeBase)
 
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
-highJump = not highJump
-if not highJump then
-humanoid.JumpPower = jumpPowerNormal
-end
-jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
+	highJump = not highJump
+	if not highJump then
+		humanoid.JumpPower = jumpPowerNormal
+	end
+	jumpBtn.Text = "Salto Alto: " .. (highJump and "ON" or "OFF")
 end)
 
 local invisBtn = makeButton("Invisible: OFF", 6)
 invisBtn.Position = UDim2.new(0.53,0,1,-30)
 invisBtn.MouseButton1Click:Connect(function()
-invisible = not invisible
-setInvisible(invisible)
-invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
+	invisible = not invisible
+	setInvisible(invisible)
+	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
 --// FPS DISPLAY
@@ -269,37 +296,30 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function()
-frameCount = frameCount + 1
-local now = tick()
-if now - lastTime >= 1 then
-fpsLabel.Text = "FPS: "..frameCount
-frameCount = 0
-lastTime = now
-end
+	frameCount += 1
+	if tick() - lastTime >= 1 then
+		fpsLabel.Text = "FPS: "..frameCount
+		frameCount = 0
+		lastTime = tick()
+	end
 end)
 
-
----
-
+----------------------------------------------------------------
 --// BORDE RAINBOW ANIMADO
-
+----------------------------------------------------------------
 local border = Instance.new("Frame", frame)
 border.Size = UDim2.new(1, 4, 1, 4)
 border.Position = UDim2.new(0, -2, 0, -2)
 border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-border.ZIndex = 0
 
 local uiStroke = Instance.new("UIStroke", border)
 uiStroke.Thickness = 4
-uiStroke.Color = Color3.fromRGB(255,0,0)
-uiStroke.Transparency = 0
 
 spawn(function()
-local hue = 0
-while true do
-hue = (hue + 1) % 360
-uiStroke.Color = Color3.fromHSV(hue/360,1,1)
-wait(0.03)
-end
+	local hue = 0
+	while true do
+		hue = (hue + 1) % 360
+		uiStroke.Color = Color3.fromHSV(hue/360,1,1)
+		wait(0.03)
+	end
 end)
