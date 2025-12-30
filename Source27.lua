@@ -24,6 +24,9 @@ local speed = false
 local fly = false
 local highJump = false
 local invisible = false
+--// ESPADA MINECRAFT
+local swordEnabled = false
+local swordTool = nil
 
 local normalSpeed = 16
 local fastSpeed = 200
@@ -145,6 +148,54 @@ end
 local function escapeBase()
 	if rootPart then
 		rootPart.CFrame = CFrame.new(0, 250, 0)
+	end
+end
+-------------------------------------------------
+--// ESPADA TIPO MINECRAFT
+-------------------------------------------------
+local function createMinecraftSword()
+	if swordTool then return end
+
+	swordTool = Instance.new("Tool")
+	swordTool.Name = "Diamond Sword"
+	swordTool.RequiresHandle = true
+	swordTool.CanBeDropped = false
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.4, 4, 0.6)
+	handle.Material = Enum.Material.Neon
+	handle.Color = Color3.fromRGB(0, 170, 255)
+	handle.CanCollide = false
+	handle.Parent = swordTool
+
+	-- estilo cuadrado (pixel)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Brick
+	mesh.Scale = Vector3.new(1, 1.2, 1)
+	mesh.Parent = handle
+
+	-- brillo azul
+	local light = Instance.new("PointLight")
+	light.Color = handle.Color
+	light.Brightness = 2
+	light.Range = 8
+	light.Parent = handle
+
+	-- matar al tocar
+	handle.Touched:Connect(function(hit)
+		local hum = hit.Parent:FindFirstChild("Humanoid")
+		if hum and hit.Parent ~= character then
+			hum.Health = 0
+		end
+	end)
+
+	swordTool.Parent = player.Backpack
+end
+local function removeMinecraftSword()
+	if swordTool then
+		swordTool:Destroy()
+		swordTool = nil
 	end
 end
 
@@ -295,8 +346,18 @@ end)
 local tpBtn = makeButton("TP Forward", 3)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base", 4)
-escBtn.MouseButton1Click:Connect(escapeBase)
+local escBtn = makeButton("Espada: OFF", 4)
+escBtn.MouseButton1Click:Connect(function()
+	swordEnabled = not swordEnabled
+
+	if swordEnabled then
+		createMinecraftSword()
+		escBtn.Text = "Espada: ON"
+	else
+		removeMinecraftSword()
+		escBtn.Text = "Espada: OFF"
+	end
+end)
 
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
