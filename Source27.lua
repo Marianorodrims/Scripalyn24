@@ -33,10 +33,10 @@ local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
 -------------------------------------------------
---// ANIMACIÓN SUPERMAN PARADO (FLOTANDO)
+--// ANIMACIÓN DE VUELO
 -------------------------------------------------
 local flyAnim = Instance.new("Animation")
-flyAnim.AnimationId = "rbxassetid://913376220" -- flotante de pie
+flyAnim.AnimationId = "rbxassetid://507766666" -- animación flotando
 local flyTrack
 
 -------------------------------------------------
@@ -61,7 +61,7 @@ local function updateSpeed()
 end
 
 -------------------------------------------------
---// FLY REAL + SUPERMAN PARADO
+--// FLY REAL + ANIMACIÓN
 -------------------------------------------------
 local bv, bg, flyConn
 
@@ -74,8 +74,7 @@ local function startFly()
 	bv.Parent = rootPart
 
 	bg = Instance.new("BodyGyro")
-	bg.MaxTorque = Vector3.new(0,1e5,0) -- evita acostarse
-	bg.P = 1e4
+	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
 
 	if not flyTrack then
@@ -88,7 +87,7 @@ local function startFly()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
 		bv.Velocity = cam.CFrame.LookVector * flySpeed
-		bg.CFrame = CFrame.new(rootPart.Position, rootPart.Position + cam.CFrame.LookVector)
+		bg.CFrame = cam.CFrame
 	end)
 end
 
@@ -150,7 +149,7 @@ local function setInvisible(state)
 end
 
 ----------------------------------------------------------------
---// GUI (MÓVIL FRIENDLY)  ⚠️ NO SE TOCÓ NADA
+--// GUI (MÓVIL FRIENDLY)
 ----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
