@@ -65,6 +65,9 @@ end
 -------------------------------------------------
 local bv, bg, flyConn
 
+--// EFECTOS DE VUELO
+local flyAura, flyWind
+
 local function startFly()
 	if fly then return end
 	fly = true
@@ -76,6 +79,34 @@ local function startFly()
 	bg = Instance.new("BodyGyro")
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
+
+-- 🔥 AURA DE ENERGÍA
+	flyAura = Instance.new("ParticleEmitter")
+	flyAura.Texture = "rbxassetid://296874871"
+	flyAura.Rate = 80
+	flyAura.Lifetime = NumberRange.new(0.6,1)
+	flyAura.Speed = NumberRange.new(2,5)
+	flyAura.Rotation = NumberRange.new(0,360)
+	flyAura.Size = NumberSequence.new{
+		NumberSequenceKeypoint.new(0,2),
+		NumberSequenceKeypoint.new(1,0)
+	}
+	flyAura.Color = ColorSequence.new(Color3.fromRGB(120,180,255))
+	flyAura.LightEmission = 1
+	flyAura.Parent = rootPart
+
+	-- 💨 PARTÍCULAS DE AIRE
+	flyWind = Instance.new("ParticleEmitter")
+	flyWind.Texture = "rbxassetid://48374994"
+	flyWind.Rate = 120
+	flyWind.Lifetime = NumberRange.new(0.3,0.6)
+	flyWind.Speed = NumberRange.new(15,25)
+	flyWind.Size = NumberSequence.new(0.6)
+	flyWind.Transparency = NumberSequence.new{
+		NumberSequenceKeypoint.new(0,0.2),
+		NumberSequenceKeypoint.new(1,1)
+	}
+	flyWind.Parent = rootPart
 
 	if not flyTrack then
 		flyTrack = animator:LoadAnimation(flyAnim)
@@ -97,6 +128,8 @@ local function stopFly()
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
 	if flyTrack then flyTrack:Stop() end
+if flyAura then flyAura:Destroy() end
+	if flyWind then flyWind:Destroy() end
 end
 
 -------------------------------------------------
