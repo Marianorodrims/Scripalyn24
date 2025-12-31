@@ -24,9 +24,8 @@ local speed = false
 local fly = false
 local highJump = false
 local invisible = false
---// ESPADA MINECRAFT
-local swordEnabled = false
-local swordTool = nil
+local wallVision = false
+local wallTransparency = 0.7
 
 local normalSpeed = 16
 local fastSpeed = 200
@@ -144,60 +143,7 @@ local function tpForward()
 	end
 end
 
---// ESCAPE
-local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0, 250, 0)
-	end
-end
--------------------------------------------------
---// ESPADA TIPO MINECRAFT
--------------------------------------------------
-local function createMinecraftSword()
-	if swordTool then return end
 
-	swordTool = Instance.new("Tool")
-	swordTool.Name = "Diamond Sword"
-	swordTool.RequiresHandle = true
-	swordTool.CanBeDropped = false
-
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.4, 4, 0.6)
-	handle.Material = Enum.Material.Neon
-	handle.Color = Color3.fromRGB(0, 170, 255)
-	handle.CanCollide = false
-	handle.Parent = swordTool
-
-	-- estilo cuadrado (pixel)
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Brick
-	mesh.Scale = Vector3.new(1, 1.2, 1)
-	mesh.Parent = handle
-
-	-- brillo azul
-	local light = Instance.new("PointLight")
-	light.Color = handle.Color
-	light.Brightness = 2
-	light.Range = 8
-	light.Parent = handle
-
-	-- matar al tocar
-	handle.Touched:Connect(function(hit)
-		local hum = hit.Parent:FindFirstChild("Humanoid")
-		if hum and hit.Parent ~= character then
-			hum.Health = 0
-		end
-	end)
-
-	swordTool.Parent = player.Backpack
-end
-local function removeMinecraftSword()
-	if swordTool then
-		swordTool:Destroy()
-		swordTool = nil
-	end
-end
 
 -------------------------------------------------
 --// SALTO ALTO
@@ -228,6 +174,27 @@ local function setInvisible(state)
 			if part:IsA("Decal") then
 				part.Transparency = state and 1 or 0
 			end
+		end
+	end
+end
+
+-------------------------------------------------
+--// WALL VISION (VER A TRAVÉS DE PAREDES)
+-------------------------------------------------
+local function setWallVision(state)
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			-- Ignorar tu personaje
+			if character and obj:IsDescendantOf(character) then
+				continue
+			end
+
+			-- Evitar cosas muy pequeñas
+			if obj.Size.Magnitude < 2 then
+				continue
+			end
+
+			obj.LocalTransparencyModifier = state and wallTransparency or 0
 		end
 	end
 end
@@ -346,17 +313,11 @@ end)
 local tpBtn = makeButton("TP Forward", 3)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Espada: OFF", 4)
-escBtn.MouseButton1Click:Connect(function()
-	swordEnabled = not swordEnabled
-
-	if swordEnabled then
-		createMinecraftSword()
-		escBtn.Text = "Espada: ON"
-	else
-		removeMinecraftSword()
-		escBtn.Text = "Espada: OFF"
-	end
+local wallBtn = makeButton("WallVision: OFF", 4)
+wallBtn.MouseButton1Click:Connect(function()
+	wallVision = not wallVision
+	setWallVision(wallVision)
+	wallBtn.Text = "WallVision: " .. (wallVision and "ON" or "OFF")
 end)
 
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
