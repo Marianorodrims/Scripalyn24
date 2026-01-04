@@ -9,28 +9,47 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
+local animator = humanoid:WaitForChild("Animator")
 
 player.CharacterAdded:Connect(function(char)
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
+	animator = humanoid:WaitForChild("Animator")
 end)
 
 --// ESTADOS
 local noclip = false
 local speed = false
 local fly = false
+local superFly = false
+local superFlySpeed = 120
 local highJump = false
 local invisible = false
+local wallVision = false
+local wallTransparency = 0.7
 
 local normalSpeed = 16
-local fastSpeed = 200 -- Súper rápido
-local flySpeed = 25 -- Vuelo más lento y controlable
+local fastSpeed = 200
+local flySpeed = 25
 local jumpPowerNormal = humanoid.JumpPower
-local jumpPowerBoost = 200 -- salto alto seguro
+local jumpPowerBoost = 200
 local jumpCooldown = 0.05
 
---// NOCLIP REAL MEJORADO
+-------------------------------------------------
+--// ANIMACIÓN DE VUELO
+-------------------------------------------------
+local flyAnim = Instance.new("Animation")
+flyAnim.AnimationId = "rbxassetid://507766666" -- animación flotando
+local flyTrack
+
+local superFlyAnim = Instance.new("Animation")
+superFlyAnim.AnimationId = "rbxassetid://616163682"
+local superFlyTrack
+
+-------------------------------------------------
+--// NOCLIP
+-------------------------------------------------
 RunService.Stepped:Connect(function()
 	if noclip and character then
 		for _,v in pairs(character:GetDescendants()) do
@@ -49,11 +68,18 @@ local function updateSpeed()
 	end
 end
 
---// FLY REAL (MÓVIL + PC)
-local bv, bg
+-------------------------------------------------
+--// FLY REAL + ANIMACIÓN
+-------------------------------------------------
+local bv, bg, flyConn
+
+--// EFECTOS DE VUELO
+local flyAura, flyWind
+
 local function startFly()
 	if fly then return end
 	fly = true
+
 	bv = Instance.new("BodyVelocity")
 	bv.MaxForce = Vector3.new(1e5,1e5,1e5)
 	bv.Parent = rootPart
@@ -62,35 +88,78 @@ local function startFly()
 	bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
 	bg.Parent = rootPart
 
-	RunService.RenderStepped:Connect(function()
+-- 🔥 AURA DE ENERGÍA
+	flyAura = Instance.new("ParticleEmitter")
+	flyAura.Texture = "rbxassetid://296874871"
+	flyAura.Rate = 80
+	flyAura.Lifetime = NumberRange.new(0.6,1)
+	flyAura.Speed = NumberRange.new(2,5)
+	flyAura.Rotation = NumberRange.new(0,360)
+	flyAura.Size = NumberSequence.new{
+		NumberSequenceKeypoint.new(0,2),
+		NumberSequenceKeypoint.new(1,0)
+	}
+	flyAura.Color = ColorSequence.new(Color3.fromRGB(120,180,255))
+	flyAura.LightEmission = 1
+	flyAura.Parent = rootPart
+
+	-- 💨 PARTÍCULAS DE AIRE
+	flyWind = Instance.new("ParticleEmitter")
+	flyWind.Texture = "rbxassetid://48374994"
+	flyWind.Rate = 120
+	flyWind.Lifetime = NumberRange.new(0.3,0.6)
+	flyWind.Speed = NumberRange.new(15,25)
+	flyWind.Size = NumberSequence.new(0.6)
+	flyWind.Transparency = NumberSequence.new{
+		NumberSequenceKeypoint.new(0,0.2),
+		NumberSequenceKeypoint.new(1,1)
+	}
+	flyWind.Parent = rootPart
+
+	if not flyTrack then
+		flyTrack = animator:LoadAnimation(flyAnim)
+	end
+	flyTrack:Play()
+	flyTrack.Looped = true
+
+	flyConn = RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
-		bv.Velocity = cam.CFrame.LookVector * flySpeed
+		local currentSpeed = superFly and superFlySpeed or flySpeed
+bv.Velocity = cam.CFrame.LookVector * currentSpeed
 		bg.CFrame = cam.CFrame
 	end)
+
+superFlyBtn.Visible = true
 end
 
 local function stopFly()
 	fly = false
+superFly = false
+superFlyBtn.Visible = false
+if superFlyTrack then superFlyTrack:Stop() end
+	if flyConn then flyConn:Disconnect() end
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
+	if flyTrack then flyTrack:Stop() end
+if flyAura then flyAura:Destroy() end
+	if flyWind then flyWind:Destroy() end
 end
 
+-------------------------------------------------
 --// TP FORWARD
+-------------------------------------------------
 local function tpForward()
 	if rootPart then
 		rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 10
 	end
 end
 
---// ESCAPE
-local function escapeBase()
-	if rootPart then
-		rootPart.CFrame = CFrame.new(0, 250, 0)
-	end
-end
 
---// SALTO ALTO / INFINITO MEJORADO
+
+-------------------------------------------------
+--// SALTO ALTO
+-------------------------------------------------
 local lastJumpTime = 0
 RunService.Stepped:Connect(function()
 	if highJump and humanoid then
@@ -104,7 +173,9 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
---// INVISIBLE / TRANSPARENTE
+-------------------------------------------------
+--// INVISIBLE
+-------------------------------------------------
 local function setInvisible(state)
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
@@ -119,11 +190,57 @@ local function setInvisible(state)
 	end
 end
 
+-------------------------------------------------
+--// WALL VISION (VER A TRAVÉS DE PAREDES)
+-------------------------------------------------
+local function setWallVision(state)
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			-- Ignorar tu personaje
+			if character and obj:IsDescendantOf(character) then
+				continue
+			end
+
+			-- Evitar cosas muy pequeñas
+			if obj.Size.Magnitude < 2 then
+				continue
+			end
+
+			obj.LocalTransparencyModifier = state and wallTransparency or 0
+		end
+	end
+end
+
 ----------------------------------------------------------------
 --// GUI (MÓVIL FRIENDLY)
 ----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
+	local superFlyBtn = Instance.new("TextButton", gui)
+superFlyBtn.Size = UDim2.new(0,160,0,45)
+superFlyBtn.Position = UDim2.new(0.5,-80,0.85,0)
+superFlyBtn.Text = "⚡ SUPER FLY"
+superFlyBtn.Font = Enum.Font.GothamBold
+superFlyBtn.TextSize = 16
+superFlyBtn.TextColor3 = Color3.new(1,1,1)
+superFlyBtn.BackgroundColor3 = Color3.fromRGB(255,60,60)
+superFlyBtn.Visible = false
+Instance.new("UICorner", superFlyBtn).CornerRadius = UDim.new(0,12)
+		superFlyBtn.MouseButton1Click:Connect(function()
+	superFly = not superFly
+
+	if superFly then
+		if flyTrack then flyTrack:Stop() end
+		superFlyTrack = animator:LoadAnimation(superFlyAnim)
+		superFlyTrack.Looped = true
+		superFlyTrack:Play()
+		superFlyBtn.Text = "⚡ SUPER FLY ON"
+	else
+		if superFlyTrack then superFlyTrack:Stop() end
+		if flyTrack then flyTrack:Play() end
+		superFlyBtn.Text = "⚡ SUPER FLY"
+	end
+end)
 gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
@@ -233,8 +350,12 @@ end)
 local tpBtn = makeButton("TP Forward", 3)
 tpBtn.MouseButton1Click:Connect(tpForward)
 
-local escBtn = makeButton("Escape Base", 4)
-escBtn.MouseButton1Click:Connect(escapeBase)
+local wallBtn = makeButton("WallVision: OFF", 4)
+wallBtn.MouseButton1Click:Connect(function()
+	wallVision = not wallVision
+	setWallVision(wallVision)
+	wallBtn.Text = "WallVision: " .. (wallVision and "ON" or "OFF")
+end)
 
 local jumpBtn = makeButton("Salto Alto: OFF", 5)
 jumpBtn.MouseButton1Click:Connect(function()
@@ -267,12 +388,11 @@ Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0,6)
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function()
-	frameCount = frameCount + 1
-	local now = tick()
-	if now - lastTime >= 1 then
+	frameCount += 1
+	if tick() - lastTime >= 1 then
 		fpsLabel.Text = "FPS: "..frameCount
 		frameCount = 0
-		lastTime = now
+		lastTime = tick()
 	end
 end)
 
@@ -283,13 +403,9 @@ local border = Instance.new("Frame", frame)
 border.Size = UDim2.new(1, 4, 1, 4)
 border.Position = UDim2.new(0, -2, 0, -2)
 border.BackgroundTransparency = 1
-border.BorderSizePixel = 0
-border.ZIndex = 0
 
 local uiStroke = Instance.new("UIStroke", border)
 uiStroke.Thickness = 4
-uiStroke.Color = Color3.fromRGB(255,0,0)
-uiStroke.Transparency = 0
 
 spawn(function()
 	local hue = 0
