@@ -16,18 +16,23 @@ player.CharacterAdded:Connect(function(char)
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
 	animator = humanoid:WaitForChild("Animator")
+
+if swordEnabled then
+		task.wait(0.3)
+		createSword()
+	end
 end)
 
 --// ESTADOS
 local noclip = false
 local speed = false
 local fly = false
-local superFly = false
-local superFlySpeed = 120
 local highJump = false
 local invisible = false
 local wallVision = false
 local wallTransparency = 0.7
+local swordEnabled = false
+local swordTool = nil
 
 local normalSpeed = 16
 local fastSpeed = 200
@@ -42,10 +47,6 @@ local jumpCooldown = 0.05
 local flyAnim = Instance.new("Animation")
 flyAnim.AnimationId = "rbxassetid://507766666" -- animación flotando
 local flyTrack
-
-local superFlyAnim = Instance.new("Animation")
-superFlyAnim.AnimationId = "rbxassetid://616163682"
-local superFlyTrack
 
 -------------------------------------------------
 --// NOCLIP
@@ -125,19 +126,13 @@ local function startFly()
 	flyConn = RunService.RenderStepped:Connect(function()
 		if not fly then return end
 		local cam = workspace.CurrentCamera
-		local currentSpeed = superFly and superFlySpeed or flySpeed
-bv.Velocity = cam.CFrame.LookVector * currentSpeed
+		bv.Velocity = cam.CFrame.LookVector * flySpeed
 		bg.CFrame = cam.CFrame
 	end)
-
-superFlyBtn.Visible = true
 end
 
 local function stopFly()
 	fly = false
-superFly = false
-superFlyBtn.Visible = false
-if superFlyTrack then superFlyTrack:Stop() end
 	if flyConn then flyConn:Disconnect() end
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
@@ -156,6 +151,59 @@ local function tpForward()
 end
 
 
+-------------------------------------------------
+--// ESPADA (ARMA)
+-------------------------------------------------
+local function createSword()
+	if swordTool then return end
+
+	local tool = Instance.new("Tool")
+	tool.Name = "AlySword"
+	tool.RequiresHandle = true
+	tool.CanBeDropped = false
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(1,4,1)
+	handle.Color = Color3.fromRGB(180,180,180)
+	handle.Material = Enum.Material.Metal
+	handle.Massless = true
+	handle.Parent = tool
+
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.FileMesh
+	mesh.MeshId = "rbxassetid://1279013" -- espada clásica
+	mesh.Scale = Vector3.new(1,1,1)
+	mesh.Parent = handle
+
+	local hitCooldown = false
+
+	handle.Touched:Connect(function(hit)
+		if hitCooldown then return end
+
+		local char = hit.Parent
+		if char and char ~= character then
+			local hum = char:FindFirstChild("Humanoid")
+			if hum and hum.Health > 0 then
+				hitCooldown = true
+				hum.Health = 0 -- elimina jugador
+				task.delay(0.5, function()
+					hitCooldown = false
+				end)
+			end
+		end
+	end)
+
+	tool.Parent = player.Backpack
+	swordTool = tool
+end
+
+local function removeSword()
+	if swordTool then
+		swordTool:Destroy()
+		swordTool = nil
+	end
+end
 
 -------------------------------------------------
 --// SALTO ALTO
@@ -216,31 +264,6 @@ end
 ----------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
-	local superFlyBtn = Instance.new("TextButton", gui)
-superFlyBtn.Size = UDim2.new(0,160,0,45)
-superFlyBtn.Position = UDim2.new(0.5,-80,0.85,0)
-superFlyBtn.Text = "⚡ SUPER FLY"
-superFlyBtn.Font = Enum.Font.GothamBold
-superFlyBtn.TextSize = 16
-superFlyBtn.TextColor3 = Color3.new(1,1,1)
-superFlyBtn.BackgroundColor3 = Color3.fromRGB(255,60,60)
-superFlyBtn.Visible = false
-Instance.new("UICorner", superFlyBtn).CornerRadius = UDim.new(0,12)
-		superFlyBtn.MouseButton1Click:Connect(function()
-	superFly = not superFly
-
-	if superFly then
-		if flyTrack then flyTrack:Stop() end
-		superFlyTrack = animator:LoadAnimation(superFlyAnim)
-		superFlyTrack.Looped = true
-		superFlyTrack:Play()
-		superFlyBtn.Text = "⚡ SUPER FLY ON"
-	else
-		if superFlyTrack then superFlyTrack:Stop() end
-		if flyTrack then flyTrack:Play() end
-		superFlyBtn.Text = "⚡ SUPER FLY"
-	end
-end)
 gui.Name = "BrainRotMenu"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
@@ -374,6 +397,22 @@ invisBtn.MouseButton1Click:Connect(function()
 	invisBtn.Text = "Invisible: " .. (invisible and "ON" or "OFF")
 end)
 
+				local swordBtn = makeButton("Espada: OFF", 7)
+swordBtn.Position = UDim2.new(0.53,0,0,40 + math.floor(7/2)*50)
+
+swordBtn.MouseButton1Click:Connect(function()
+	swordEnabled = not swordEnabled
+
+	if swordEnabled then
+		createSword()
+		swordBtn.Text = "Espada: ON"
+	else
+		removeSword()
+		swordBtn.Text = "Espada: OFF"
+	end
+end)
+				
+				
 --// FPS DISPLAY
 local fpsLabel = Instance.new("TextLabel", frame)
 fpsLabel.Size = UDim2.new(0.4,0,0,25)
